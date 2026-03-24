@@ -18,10 +18,6 @@
             <el-icon><House /></el-icon>
             <span>首页</span>
           </el-menu-item>
-          <el-menu-item index="/articles">
-            <el-icon><Document /></el-icon>
-            <span>文章</span>
-          </el-menu-item>
           <el-menu-item index="/about">
             <el-icon><User /></el-icon>
             <span>关于</span>
@@ -45,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { House, Document, User } from '@element-plus/icons-vue'
+import { House, User } from '@element-plus/icons-vue'
 </script>
 
 <style scoped>

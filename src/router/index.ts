@@ -11,11 +11,6 @@ const router = createRouter({
       children: [
         {
           path: '',
-          name: 'home',
-          component: () => import('@/views/HomeView.vue'),
-        },
-        {
-          path: 'articles',
           name: 'articles',
           component: () => import('@/views/ArticlesView.vue'),
         },
@@ -51,20 +46,14 @@ router.beforeEach((to, from, next) => {
   
   // 白名单路由（不需要登录）
   const whiteList = [
-    '/',           // 首页
-    '/articles',   // 文章列表
+    '/',           // 文章列表页（首页）
     '/about',      // 关于页面
     '/login',      // 登录
     '/register'    // 注册
   ]
   
   if (whiteList.includes(to.path)) {
-    // 如果已登录，访问登录/注册页则跳转到首页
-    if (isLoggedIn() && (to.path === '/login' || to.path === '/register')) {
-      next('/')
-    } else {
-      next()
-    }
+    next()
   } else {
     // 其他路由需要登录（如：创建文章、分类管理等后台功能）
     if (isLoggedIn()) {

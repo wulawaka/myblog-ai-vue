@@ -101,8 +101,18 @@ const handleLogin = async () => {
     
     loading.value = true
     const res = await loginApi(loginForm)
-    setToken(res.data.token)
-    setUserInfo(res.data.userInfo)
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const loginData = (res.data as any)?.data
+    
+    // 注意：后端返回的格式是 {code, msg, data: {token, userInfo}}
+    if (loginData?.token) {
+      setToken(loginData.token)
+    }
+    if (loginData?.userInfo) {
+      setUserInfo(loginData.userInfo)
+    }
+    
     ElMessage.success('登录成功')
     setTimeout(() => {
       router.push('/')

@@ -16,14 +16,21 @@ export interface LoginData {
  * 设置 Token
  */
 export function setToken(token: string): void {
-  localStorage.setItem('token', token)
+  if (token) {
+    localStorage.setItem('token', token)
+  }
 }
 
 /**
  * 获取 Token
  */
 export function getToken(): string | null {
-  return localStorage.getItem('token')
+  const token = localStorage.getItem('token')
+  // 检查是否为空或 'undefined' 字符串
+  if (!token || token === 'undefined') {
+    return null
+  }
+  return token
 }
 
 /**
@@ -45,15 +52,16 @@ export function setUserInfo(userInfo: UserInfo): void {
  */
 export function getUserInfo(): UserInfo | null {
   const userInfoStr = localStorage.getItem('userInfo')
-  if (userInfoStr) {
-    try {
-      return JSON.parse(userInfoStr) as UserInfo
-    } catch (e) {
-      console.error('解析用户信息失败:', e)
-      return null
-    }
+  // 检查是否为空或 'undefined' 字符串
+  if (!userInfoStr || userInfoStr === 'undefined') {
+    return null
   }
-  return null
+  try {
+    return JSON.parse(userInfoStr) as UserInfo
+  } catch (e) {
+    console.error('解析用户信息失败:', e)
+    return null
+  }
 }
 
 /**
