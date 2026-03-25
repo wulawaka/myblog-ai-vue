@@ -98,3 +98,12 @@ export function updateTopStatusApi(data: UpdateTopStatusParams) {
   return put('/article/top', data)
 }
 
+/**
+ * 获取文章详情
+ * @param id 文章 ID
+ * @returns Promise<Article>
+ */
+export function getArticleDetailApi(id: number) {
+  return get<Article>(`/article/${id}`)
+}
+

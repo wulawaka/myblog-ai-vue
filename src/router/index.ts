@@ -13,6 +13,26 @@ const router = createRouter({
           path: '',
           name: 'articles',
           component: () => import('@/views/ArticlesView.vue'),
+          children: [
+            {
+              path: 'profile',
+              name: 'profile',
+              component: () => import('@/views/ProfileView.vue'),
+              meta: { title: '个人信息' }
+            },
+            {
+              path: 'change-password',
+              name: 'change-password',
+              component: () => import('@/views/ChangePasswordView.vue'),
+              meta: { title: '修改密码' }
+            },
+            {
+              path: 'article/:id',
+              name: 'article-detail',
+              component: () => import('@/views/ArticleDetailView.vue'),
+              meta: { title: '文章详情' }
+            }
+          ]
         },
         {
           path: 'about',

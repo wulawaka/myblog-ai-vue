@@ -1,4 +1,3 @@
-
 # 博客系统 API 接口文档
 
 本文档描述了博客系统的所有 RESTful API 接口，包含用户模块、分类模块和文章模块的完整接口说明。
@@ -22,7 +21,9 @@
   - [3.2 获取文章列表](#32-获取文章列表)
   - [3.3 删除文章](#33-删除文章)
   - [3.4 更新文章置顶状态](#34-更新文章置顶状态)
-- [四、错误码说明](#四错误码说明)
+  - [3.5 获取文章详情](#35-获取文章详情)
+- [四、数据结构说明](#四数据结构说明)
+- [五、错误码说明](#五错误码说明)
 
 ---
 
@@ -491,6 +492,13 @@
 | data[].children[].name | String | 子标签名称 |
 | data[].children[].children | null | 子标签无子节点 |
 
+### 数据结构说明
+
+**TagTreeNode（标签树节点）**:
+- `id`: 标签 ID
+- `name`: 标签名称
+- `children`: 子节点列表（主标签包含子标签数组，子标签为 null）
+
 ### 响应示例
 
 #### 成功响应
@@ -581,7 +589,7 @@
 | data.userInfo | Object | 作者信息 |
 | data.userInfo.username | String | 作者用户名 |
 | data.userInfo.email | String | 作者邮箱 |
-| data.scCategoryId | String | 子标签 ID 字符串 |
+| data.scategoryId | String | 子标签 ID 字符串（逗号分隔） |
 
 ### 响应示例
 
@@ -670,13 +678,14 @@
 | data.list | Array | 文章列表 |
 | data.list[].id | Long | 文章 ID |
 | data.list[].userId | Long | 用户 ID |
-| data.list[].username | String | 用户名称 |
 | data.list[].categoryId | Long | 主分类 ID |
-| data.list[].categoryName | String | 主分类名称 |
 | data.list[].title | String | 文章标题 |
 | data.list[].summary | String | 文章概述 |
 | data.list[].isTop | Integer | 置顶状态 |
 | data.list[].updatedAt | DateTime | 更新时间 |
+| data.list[].username | String | 作者用户名 |
+| data.list[].categoryName | String | 分类名称 |
+| data.list[].subCategories | Array | 子标签列表 |
 | data.list[].subCategories[].id | Long | 子标签 ID |
 | data.list[].subCategories[].name | String | 子标签名称 |
 | data.total | Long | 总记录数 |
@@ -684,67 +693,65 @@
 | data.pageSize | Integer | 每页数量 |
 | data.totalPages | Integer | 总页数 |
 
+### 数据结构说明
+
+**SubCategoryInfo（子标签信息）**:
+- `id`: 子标签 ID
+- `name`: 子标签名称
+
 ### 响应示例
 
 #### 成功响应
 ```json
 {
-    "code": 20101,
-    "msg": "操作成功",
-    "data": {
-        "total": 7,
-        "totalPages": 1,
-        "pageSize": 10,
-        "list": [
-            {
-                "categoryId": 1,
-                "categoryName": "技术干货",
-                "id": 1,
-                "isTop": 1,
-                "subCategories": [
-                    {
-                        "id": 6,
-                        "name": "Java开发"
-                    },
-                    {
-                        "id": 7,
-                        "name": "Python编程"
-                    }
-                ],
-                "summary": "本文深入讲解HashMap、ArrayList等常用集合的底层实现，分析扩容机制和性能优化点，帮助开发者理解集合的使用场景。",
-                "title": "Java集合框架底层原理详解",
-                "updatedAt": "2026-03-18T13:41:29",
-                "userId": 2,
-                "username": "zahem"
-            },
-            {
-                "categoryId": 1,
-                "categoryName": "技术干货",
-                "id": 2,
-                "isTop": 0,
-                "subCategories": [
-                    {
-                        "id": 6,
-                        "name": "Java开发"
-                    },
-                    {
-                        "id": 7,
-                        "name": "Python编程"
-                    },
-                    {
-                        "id": 8,
-                        "name": "前端开发"
-                    }
-                ],
-                "summary": "教你使用requests+BeautifulSoup实现豆瓣电影TOP250的爬取，包含数据解析、保存到Excel和反爬策略处理。",
-                "title": "Python爬虫实战：爬取豆瓣电影TOP250",
-                "updatedAt": "2026-03-18T13:41:29",
-                "userId": 2,
-                "username": "zahem"
-            }
-        ],
-        "pageNum": 1
-    }
+  "code": 20201,
+  "msg": "操作成功",
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "userId": 1,
+        "categoryId": 1,
+        "title": "Spring Boot 入门教程",
+        "summary": "本文介绍 Spring Boot 的基础知识...",
+        "isTop": 1,
+        "updatedAt": "2026-03-23T10:30:00",
+        "username": "admin",
+        "categoryName": "Java",
+        "subCategories": [
+          {
+            "id": 2,
+            "name": "Spring"
+          },
+          {
+            "id": 3,
+            "name": "MyBatis"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "userId": 1,
+        "categoryId": 1,
+        "title": "Spring MVC 详解",
+        "summary": "深入解析 Spring MVC 框架...",
+        "isTop": 0,
+        "updatedAt": "2026-03-23T11:00:00",
+        "username": "admin",
+        "categoryName": "Java",
+        "subCategories": [
+          {
+            "id": 2,
+            "name": "Spring"
+          }
+        ]
+      }
+    ],
+    "total": 15,
+    "pageNum": 1,
+    "pageSize": 10,
+    "totalPages": 2
+  }
 }
 ```
 
@@ -867,7 +874,140 @@
 
 ---
 
-# 四、错误码说明
+## 3.5 获取文章详情
+
+### 基本信息
+- **接口名称**: 获取文章详情
+- **请求方法**: GET
+- **请求路径**: `/api/article/{id}`
+- **功能描述**: 获取单篇文章的完整详情信息（无需登录）
+
+### 请求参数
+
+#### 路径参数
+
+| 字段名 | 类型 | 必填 | 示例值 | 说明 |
+|--------|------|------|--------|------|
+| id | Long | 是 | `1` | 文章 ID |
+
+### 响应参数
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| code | Integer | 业务状态码（5 位数） |
+| msg | String | 响应消息 |
+| data | Object | 响应数据 |
+| data.id | Long | 文章 ID |
+| data.userId | Long | 用户 ID |
+| data.categoryId | Long | 主分类 ID |
+| data.title | String | 文章标题 |
+| data.summary | String | 文章概述 |
+| data.content | String | 文章内容 |
+| data.isTop | Integer | 置顶状态 |
+| data.isDraft | Integer | 草稿状态 |
+| data.isDeleted | Integer | 删除标记 |
+| data.createdAt | DateTime | 创建时间 |
+| data.updatedAt | DateTime | 更新时间 |
+| data.username | String | 作者用户名 |
+| data.categoryName | String | 分类名称 |
+| data.subCategories | Array | 子标签列表 |
+| data.subCategories[].id | Long | 子标签 ID |
+| data.subCategories[].name | String | 子标签名称 |
+
+### 数据结构说明
+
+**SubCategoryInfo（子标签信息）**:
+- `id`: 子标签 ID
+- `name`: 子标签名称
+
+### 响应示例
+
+#### 成功响应
+```json
+{
+  "code": 20201,
+  "msg": "操作成功",
+  "data": {
+    "id": 1,
+    "userId": 1,
+    "categoryId": 1,
+    "title": "Spring Boot 入门教程",
+    "summary": "本文介绍 Spring Boot 的基础知识...",
+    "content": "# Spring Boot 入门\n\nSpring Boot 是...",
+    "isTop": 1,
+    "isDraft": 0,
+    "isDeleted": 0,
+    "createdAt": "2026-03-20T10:00:00",
+    "updatedAt": "2026-03-23T10:30:00",
+    "username": "admin",
+    "categoryName": "Java",
+    "subCategories": [
+      {
+        "id": 2,
+        "name": "Spring"
+      },
+      {
+        "id": 3,
+        "name": "MyBatis"
+      }
+    ]
+  }
+}
+```
+
+#### 失败响应（文章不存在）
+```json
+{
+  "code": 40201,
+  "msg": "文章不存在",
+  "data": null
+}
+```
+
+---
+
+# 四、数据结构说明
+
+## DTO 数据结构
+
+### 1. SubCategoryInfo（子标签信息）
+
+用于文章列表和详情中返回子标签信息。
+
+```java
+{
+  "id": Long,        // 子标签 ID
+  "name": String     // 子标签名称
+}
+```
+
+### 2. TagTreeNode（标签树节点）
+
+用于标签树接口返回树形结构数据。
+
+```java
+{
+  "id": Long,                    // 标签 ID
+  "name": String,                // 标签名称
+  "children": List<TagTreeNode>  // 子节点列表（主标签包含子标签，子标签为 null）
+}
+```
+
+### 3. ApiResponse（统一响应格式）
+
+所有接口的统一响应格式。
+
+```java
+{
+  "code": Integer,    // 5 位业务状态码
+  "msg": String,      // 响应消息
+  "data": T           // 响应数据（可能为 null）
+}
+```
+
+---
+
+# 五、错误码说明
 
 ## 错误码格式规范
 
@@ -996,14 +1136,25 @@
 ### 跨域说明
 
 所有控制器均已配置允许跨域访问（`@CrossOrigin(origins = "*")`），支持前后端分离开发。
+
+### JWT Token 使用说明
+
+#### Token 获取
+通过登录接口（`POST /api/user/login`）获取 JWT Token。
+
+#### Token 使用
+需要在需要认证的接口请求头中添加 Token：
 ```
+Authorization: Bearer <your-token-here>
+```
+
+或者在请求体中传递 `userId`（具体取决于拦截器的实现）。
+
+#### Token 有效期
+Token 有效期由 JWT 配置决定，过期后需要重新登录。
 
 ---
 
-✅ **文档已完成！** 这份完整的接口文档包含了：
-
-- **12 个 API 接口**的详细信息（用户模块 4 个、分类模块 4 个、文章模块 4 个）
-- 每个接口的**完整参数说明**（请求参数、响应参数、字段类型、是否必填、示例值、说明）
-- **丰富的响应示例**（成功和各类失败场景）
-- **三大模块的错误码表格**（共 40+ 个错误码，按模块和类型分类）
-- 清晰的 **Markdown 格式**，可直接复制到 Wiki 或 Readme 中使用
+**文档版本**: v2.0  
+**最后更新**: 2026-03-25  
+**技术栈**: Spring Boot 4.0.3 + Spring Security + JPA + MySQL + JWT (JJWT 0.11.5)

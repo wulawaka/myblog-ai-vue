@@ -38,8 +38,15 @@
     </header>
 
     <main class="main-container">
+      <!-- 子路由视图：用于显示个人信息、修改密码等子页面 -->
+      <router-view v-slot="{ Component }">
+        <transition name="fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
       
-      <div class="content-area">
+      <!-- 默认内容：文章列表和侧边栏 -->
+      <div v-if="$route.name === 'articles'" class="content-area">
         <div class="category-nav">
           
           <div class="fixed-tabs">
@@ -69,7 +76,7 @@
           <div v-for="article in articleList" :key="article.id" class="article-item">
             <div class="article-content">
               <div class="article-info">
-                <h3 class="title">{{ article.title }}</h3>
+                <h3 class="title" @click="navigateToArticle(article.id)">{{ article.title }}</h3>
                 <p class="abstract">{{ article.summary }}</p>
                         
                 <div class="item-footer">
@@ -94,7 +101,7 @@
         </div>
       </div>
 
-      <aside class="sidebar">
+      <aside v-if="$route.name === 'articles'" class="sidebar">
         <div class="sidebar-card sign-card">
           <div class="sign-info">
             <h4>下午好！</h4>
@@ -183,7 +190,7 @@ const handleGreetingClick = () => {
 const handleDropdownCommand = (command: string) => {
   switch (command) {
     case 'profile':
-      ElMessage.info('个人信息功能开发中...')
+      router.push('/profile')
       break
     case 'homepage':
       ElMessage.info('我的主页功能开发中...')
@@ -202,6 +209,11 @@ const handleDropdownCommand = (command: string) => {
 
 const handleLogout = () => {
   logout()
+}
+
+// 跳转到文章详情页
+const navigateToArticle = (articleId: number) => {
+  router.push(`/article/${articleId}`)
 }
 
 const loadArticleList = async () => {
@@ -394,7 +406,7 @@ const isActiveRoute = (path: string) => {
 /* 核心修复：删除了 padding-top: 80px，改用 margin-top 完美避开导航栏高度并留一点间距 */
 .main-container {
   width: 1000px; 
-  /* margin: 72px auto 0;  */
+  margin: 1px auto 0;
   display: flex;
   justify-content: space-between; 
   gap: 20px;
@@ -673,4 +685,15 @@ const isActiveRoute = (path: string) => {
 .tag-docker { background-color: #e6f7ff; color: #1890ff; }
 .tag-ai { background-color: #f9f0ff; color: #722ed1; }
 .tag-go { background-color: #e6fffb; color: #08979c; }
+
+/* 子路由过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 </style>
