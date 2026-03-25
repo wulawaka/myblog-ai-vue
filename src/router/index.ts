@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Layout from '@/components/Layout.vue'
-import { isLoggedIn } from '@/utils/auth'
+import { isLoggedIn, handleTokenExpiry } from '@/utils/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -53,13 +53,15 @@ router.beforeEach((to, from, next) => {
   ]
   
   if (whiteList.includes(to.path)) {
+    // 白名单路由，直接放行
     next()
   } else {
     // 其他路由需要登录（如：创建文章、分类管理等后台功能）
     if (isLoggedIn()) {
+      // 已登录，放行
       next()
     } else {
-      // 未登录，跳转到登录页
+      // 未登录或 token 已过期，跳转到登录页
       next('/login')
     }
   }

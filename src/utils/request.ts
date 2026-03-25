@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
+import { isTokenExpired, handleTokenExpiry } from './auth'
 
 // 统一响应数据结构
 export interface ApiResponse<T = unknown> {
@@ -22,6 +23,14 @@ request.interceptors.request.use(
   (config) => {
     // 从 localStorage 获取 token
     const token = localStorage.getItem('token')
+    
+    // 检查 token 是否过期
+    if (token && isTokenExpired()) {
+      // token 已过期，清除并跳转
+      handleTokenExpiry()
+      return Promise.reject(new Error('Token 已过期'))
+    }
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
