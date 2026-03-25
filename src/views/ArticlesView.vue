@@ -17,7 +17,22 @@
             :prefix-icon="Search"
           />
           
-          <span class="greeting-text" @click="handleGreetingClick">{{ greetingText }}</span>
+          <el-dropdown v-if="isLogin" trigger="hover" @command="handleDropdownCommand">
+            <span class="greeting-text">
+              {{ greetingText }}
+              <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="profile">个人信息</el-dropdown-item>
+                <el-dropdown-item command="homepage">我的主页</el-dropdown-item>
+                <el-dropdown-item command="tags">标签管理</el-dropdown-item>
+                <el-dropdown-item command="drafts">草稿箱</el-dropdown-item>
+                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+          <span v-else class="greeting-text" @click="handleGreetingClick">{{ greetingText }}</span>
         </div>
       </div>
     </header>
@@ -25,36 +40,54 @@
     <main class="main-container">
       
       <div class="content-area">
-        <div class="list-header">
-          <a href="#" class="active">推荐</a>
-          <a href="#">最新</a>
-          <a href="#">置顶</a>
+        <div class="category-nav">
+          
+          <div class="fixed-tabs">
+            <a href="#" class="active">推荐</a>
+            <a href="#">最新</a>
+            <a href="#">置顶</a>
+          </div>
+
+          <div class="tabs-divider"></div>
+
+          <div class="scroll-tabs-wrapper">
+            <div class="scroll-arrow left-arrow" @click="scrollTabs(-150)">
+              <el-icon><ArrowLeft /></el-icon>
+            </div>
+            
+            <div class="scroll-viewport" ref="tabsContainer">
+              <a v-for="tag in tagTreeList" :key="tag.id" href="#">{{ tag.name }}</a>
+            </div>
+
+            <div class="scroll-arrow right-arrow" @click="scrollTabs(150)">
+              <el-icon><ArrowRight /></el-icon>
+            </div>
+          </div>
         </div>
         
         <div class="article-list">
-          <div class="article-item">
-            
+          <div v-for="article in articleList" :key="article.id" class="article-item">
             <div class="article-content">
               <div class="article-info">
-                <h3 class="title">单位：px、em、rem、vw、vh、clamp 怎么选？</h3>
-                <p class="abstract">在前端开发中，尺寸单位的选择直接影响到页面的响应式表现和用户体验。本文将深入探讨不同场景下的单位选择，帮你理清这些相对单位与绝对单位的最佳实践...</p>
-                
+                <h3 class="title">{{ article.title }}</h3>
+                <p class="abstract">{{ article.summary }}</p>
+                        
                 <div class="item-footer">
                   <div class="actions">
                     <span class="action-item"><el-icon><View /></el-icon> 8512</span>
                     <span class="action-item"><el-icon><Star /></el-icon> 128</span>
                     <span class="action-item"><el-icon><ChatDotRound /></el-icon> 36</span>
                   </div>
-
+        
                   <div class="article-meta-bottom">
-                    <span class="author">Moment</span>
+                    <span class="author">{{ (article as any).username || '未知作者' }}</span>
                     <span class="divider">|</span>
-                    <span class="date">2小时前</span>
+                    <span class="date">2 小时前</span>
                     <span class="divider">|</span>
-                    <span class="tag">前端</span>
+                    <span class="tag">{{ (article as any).categoryName || '前端' }}</span>
                   </div>
                 </div>
-
+        
               </div>
             </div>
           </div>
@@ -96,35 +129,40 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-// 需要引入 Element Plus 的图标
-import { Search, View, Star, ChatDotRound } from '@element-plus/icons-vue'
-import { getUserInfo, isLoggedIn } from '@/utils/auth'
+import { ElMessage } from 'element-plus'
+// 【新增】引入了 ArrowLeft 图标
+import { Search, View, Star, ChatDotRound, ArrowDown, ArrowRight, ArrowLeft } from '@element-plus/icons-vue'
+import { getUserInfo, isLoggedIn, logout } from '@/utils/auth'
+import { getArticleListApi, type Article } from '@/api/article'
+import { getTagTreeApi, type TagTreeNode } from '@/api/category'
 
 const router = useRouter()
 const route = useRoute()
 
-// 搜索框数据绑定 (为后续接入 Pinia 或 API 留存)
 const searchQuery = ref('')
-
-// 登录状态
 const isLogin = ref(false)
-
-// 用户名
 const username = ref('')
-
-// 问候语文本（改为 ref，不用 computed）
 const greetingText = ref('您还没有登录')
+const articleList = ref<Article[]>([])
+const pageNum = ref(1)
+const pageSize = ref(10)
 
-// 更新用户信息
+// 标签树列表
+const tagTreeList = ref<TagTreeNode[]>([])
+
+// 【修改】标签栏滚动逻辑，接收一个偏移量参数，正数向右，负数向左
+const tabsContainer = ref<HTMLElement | null>(null)
+const scrollTabs = (offset: number) => {
+  if (tabsContainer.value) {
+    tabsContainer.value.scrollBy({ left: offset, behavior: 'smooth' })
+  }
+}
+
 const updateUserInfo = () => {
   isLogin.value = isLoggedIn()
-  
-  // 只有在已登录时才获取用户信息
   if (isLogin.value) {
     const userInfo = getUserInfo()
     username.value = userInfo?.username || ''
-    
-    // 直接更新 greetingText
     if (username.value) {
       greetingText.value = `你好！${username.value}`
     } else {
@@ -136,45 +174,91 @@ const updateUserInfo = () => {
   }
 }
 
-// 处理问候语点击
 const handleGreetingClick = () => {
   if (!isLogin.value) {
     window.location.href = '/login'
   }
 }
 
-// 监听路由变化，更新用户信息
+const handleDropdownCommand = (command: string) => {
+  switch (command) {
+    case 'profile':
+      ElMessage.info('个人信息功能开发中...')
+      break
+    case 'homepage':
+      ElMessage.info('我的主页功能开发中...')
+      break
+    case 'tags':
+      ElMessage.info('标签管理功能开发中...')
+      break
+    case 'drafts':
+      ElMessage.info('草稿箱功能开发中...')
+      break
+    case 'logout':
+      handleLogout()
+      break
+  }
+}
+
+const handleLogout = () => {
+  logout()
+}
+
+const loadArticleList = async () => {
+  try {
+    const res = await getArticleListApi({ pageNum: pageNum.value, pageSize: pageSize.value })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = (res.data as any)
+    if (data && data.data && data.data.list) {
+      articleList.value = data.data.list
+    }
+  } catch (error) {
+    console.error('获取文章列表失败:', error)
+    // 页面纯视觉演示时不强制报错弹窗
+  }
+}
+
+const loadTagTree = async () => {
+  try {
+    const res = await getTagTreeApi()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = (res.data as any)
+    if (data && data.data) {
+      tagTreeList.value = data.data
+    }
+  } catch (error) {
+    console.error('获取标签树失败:', error)
+    ElMessage.error('获取标签树失败，请稍后重试')
+  }
+}
+
 watch(
   () => route.fullPath,
   () => {
-    // 延迟一点执行，确保 localStorage 已经写入
     setTimeout(() => {
       updateUserInfo()
     }, 100)
   }
 )
 
-// 页面加载时更新用户信息
 onMounted(() => {
-  // 延迟执行，确保有足够时间从登录页跳转过来
   setTimeout(() => {
     updateUserInfo()
   }, 100)
+  loadArticleList()
+  loadTagTree()
 })
 
-// 导航方法
 const navigateTo = (path: string) => {
   router.push(path)
 }
 
-// 判断是否为当前激活的路由
 const isActiveRoute = (path: string) => {
   return route.path === path
 }
 </script>
 
 <style scoped>
-/* --- 核心修复：重置 Vite 默认样式，并铺满一整块完美背景 --- */
 :global(body), :global(html) {
   margin: 0;
   padding: 0;
@@ -238,12 +322,10 @@ const isActiveRoute = (path: string) => {
   margin-right: 30px;          
   letter-spacing: 2px;         
   cursor: pointer;             
-  
   background: linear-gradient(135deg, #1e80ff 0%, #4facfe 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  
   text-shadow: 0px 2px 4px rgba(30, 128, 255, 0.1);
 }
 
@@ -279,13 +361,20 @@ const isActiveRoute = (path: string) => {
   margin-left: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 .greeting-text:hover {
   color: #1e80ff;
 }
-/* 未登录状态下的样式 */
-.greeting-text.not-logged-in {
-  color: #909090;
+
+:deep(.el-dropdown-menu__item) {
+  border: none !important;
+}
+:deep(.el-dropdown-menu) {
+  border: none !important;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1) !important;
 }
 
 .search-input {
@@ -302,18 +391,10 @@ const isActiveRoute = (path: string) => {
   background-color: #fff;
 }
 
-.creator-btn {
-  background-color: #1e80ff;
-  border-radius: 4px;
-}
-
-.user-avatar {
-  cursor: pointer;
-}
-
+/* 核心修复：删除了 padding-top: 80px，改用 margin-top 完美避开导航栏高度并留一点间距 */
 .main-container {
   width: 1000px; 
-  margin: 0 auto;
+  /* margin: 72px auto 0;  */
   display: flex;
   justify-content: space-between; 
   gap: 20px;
@@ -324,24 +405,111 @@ const isActiveRoute = (path: string) => {
   background: #fff;
   border-radius: 4px;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  overflow: hidden;
 }
 
-.list-header {
-  padding: 16px 20px;
+/* --- 分类导航栏样式重构 --- */
+.category-nav {
+  display: flex;
+  align-items: center;
   border-bottom: 1px solid #e4e6eb;
+  padding: 0 20px;
+  height: 50px; /* 固定高度，统一内外布局 */
+}
+
+/* 固定的左侧标签 */
+.fixed-tabs {
   display: flex;
   gap: 24px;
+  flex-shrink: 0; /* 确保不被右侧挤压 */
 }
 
-.list-header a {
+.fixed-tabs a {
   text-decoration: none;
   color: #909090;
   font-size: 14px;
 }
-
-.list-header a.active {
+.fixed-tabs a.active {
   color: #1e80ff;
 }
+
+/* 分割线 */
+.tabs-divider {
+  width: 1px;
+  height: 14px;
+  background-color: #e4e6eb;
+  margin: 0 20px;
+  flex-shrink: 0;
+}
+
+/* 包含箭头和滚动视口的外部包装器 */
+.scroll-tabs-wrapper {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+}
+
+/* 实际进行滚动的视口容器 */
+.scroll-viewport {
+  display: flex;
+  gap: 24px;
+  flex: 1;
+  align-items: center;
+  height: 100%;
+  overflow-x: auto;
+  white-space: nowrap;
+  scroll-behavior: smooth;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scroll-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.scroll-viewport a {
+  text-decoration: none;
+  color: #909090;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.scroll-viewport a:hover {
+  color: #1e80ff;
+}
+
+/* 左右滚动箭头的通用样式 */
+.scroll-arrow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: #8a919f;
+  cursor: pointer;
+  z-index: 2;
+  padding: 0 8px;
+}
+.scroll-arrow:hover {
+  color: #1e80ff;
+}
+
+/* 左箭头：靠左，带有向右扩散的白色遮罩渐变效果 */
+.left-arrow {
+  left: 0;
+  box-shadow: 12px 0 10px -5px rgba(255, 255, 255, 0.9);
+}
+
+/* 右箭头：靠右，带有向左扩散的白色遮罩渐变效果 */
+.right-arrow {
+  right: 0;
+  box-shadow: -12px 0 10px -5px rgba(255, 255, 255, 0.9);
+}
+/* -------------------- */
+
 
 .article-item {
   padding: 20px;
@@ -463,70 +631,46 @@ const isActiveRoute = (path: string) => {
   margin-bottom: 12px;
 }
 
-/* 【新增】标签云容器样式：实现错落放着、不一行一行 */
 .tag-cloud {
   display: flex;
-  flex-wrap: wrap; /* 自动换行，形成错落感 */
-  gap: 10px; /* 标签之间的间距 */
+  flex-wrap: wrap; 
+  gap: 10px; 
   padding-top: 4px;
 }
 
-/* 【新增】自定义小圆形卡片标签基础样式 */
 .blog-tag {
   display: inline-block;
-  padding: 6px 14px; /* 上下少，左右多，形成椭圆感 */
+  padding: 6px 14px; 
   font-size: 12px;
   font-weight: 500;
-  border-radius: 20px; /* 大圆角，形成圆形卡片感 */
+  border-radius: 20px; 
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid transparent; /* 预留边框位置 */
+  border: 1px solid transparent; 
 }
 
 .blog-tag:hover {
-  transform: translateY(-2px); /* 悬浮微动效 */
+  transform: translateY(-2px); 
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
-/* 【新增】定义不同的莫兰迪色系（淡雅，不刺眼）给不同的标签 */
-.tag-java {
-  background-color: #e8f4ff;
-  color: #1e80ff;
+:deep(.el-tooltip__trigger),
+:deep(.el-tooltip__trigger:focus-visible),
+:deep(.el-dropdown),
+:deep(.el-dropdown:focus-visible),
+.greeting-text:focus,
+.greeting-text:focus-visible {
+  outline: none !important;
 }
-.tag-python {
-  background-color: #fff7e6;
-  color: #fa8c16;
-}
-.tag-vue {
-  background-color: #e6fffb;
-  color: #00b96b;
-}
-.tag-ts {
-  background-color: #f0f5ff;
-  color: #2f54eb;
-}
-.tag-react {
-  background-color: #e6f7ff;
-  color: #13c2c2;
-}
-.tag-node {
-  background-color: #f6ffed;
-  color: #52c41a;
-}
-.tag-css {
-  background-color: #fff0f6;
-  color: #eb2f96;
-}
-.tag-docker {
-  background-color: #e6f7ff;
-  color: #1890ff;
-}
-.tag-ai {
-  background-color: #f9f0ff;
-  color: #722ed1;
-}
-.tag-go {
-  background-color: #e6fffb;
-  color: #08979c;
-}
+
+.tag-java { background-color: #e8f4ff; color: #1e80ff; }
+.tag-python { background-color: #fff7e6; color: #fa8c16; }
+.tag-vue { background-color: #e6fffb; color: #00b96b; }
+.tag-ts { background-color: #f0f5ff; color: #2f54eb; }
+.tag-react { background-color: #e6f7ff; color: #13c2c2; }
+.tag-node { background-color: #f6ffed; color: #52c41a; }
+.tag-css { background-color: #fff0f6; color: #eb2f96; }
+.tag-docker { background-color: #e6f7ff; color: #1890ff; }
+.tag-ai { background-color: #f9f0ff; color: #722ed1; }
+.tag-go { background-color: #e6fffb; color: #08979c; }
 </style>

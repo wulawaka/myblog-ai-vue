@@ -670,12 +670,15 @@
 | data.list | Array | 文章列表 |
 | data.list[].id | Long | 文章 ID |
 | data.list[].userId | Long | 用户 ID |
+| data.list[].username | String | 用户名称 |
 | data.list[].categoryId | Long | 主分类 ID |
+| data.list[].categoryName | String | 主分类名称 |
 | data.list[].title | String | 文章标题 |
 | data.list[].summary | String | 文章概述 |
 | data.list[].isTop | Integer | 置顶状态 |
 | data.list[].updatedAt | DateTime | 更新时间 |
-| data.list[].subCategoryIds | String | 子标签 ID 字符串 |
+| data.list[].subCategories[].id | Long | 子标签 ID |
+| data.list[].subCategories[].name | String | 子标签名称 |
 | data.total | Long | 总记录数 |
 | data.pageNum | Integer | 当前页码 |
 | data.pageSize | Integer | 每页数量 |
@@ -686,36 +689,62 @@
 #### 成功响应
 ```json
 {
-  "code": 20201,
-  "msg": "操作成功",
-  "data": {
-    "list": [
-      {
-        "id": 1,
-        "userId": 1,
-        "categoryId": 1,
-        "title": "Spring Boot 入门教程",
-        "summary": "本文介绍 Spring Boot 的基础知识...",
-        "isTop": 1,
-        "updatedAt": "2026-03-23T10:30:00",
-        "subCategoryIds": "2,3"
-      },
-      {
-        "id": 2,
-        "userId": 1,
-        "categoryId": 1,
-        "title": "Spring MVC 详解",
-        "summary": "深入解析 Spring MVC 框架...",
-        "isTop": 0,
-        "updatedAt": "2026-03-23T11:00:00",
-        "subCategoryIds": "2"
-      }
-    ],
-    "total": 15,
-    "pageNum": 1,
-    "pageSize": 10,
-    "totalPages": 2
-  }
+    "code": 20101,
+    "msg": "操作成功",
+    "data": {
+        "total": 7,
+        "totalPages": 1,
+        "pageSize": 10,
+        "list": [
+            {
+                "categoryId": 1,
+                "categoryName": "技术干货",
+                "id": 1,
+                "isTop": 1,
+                "subCategories": [
+                    {
+                        "id": 6,
+                        "name": "Java开发"
+                    },
+                    {
+                        "id": 7,
+                        "name": "Python编程"
+                    }
+                ],
+                "summary": "本文深入讲解HashMap、ArrayList等常用集合的底层实现，分析扩容机制和性能优化点，帮助开发者理解集合的使用场景。",
+                "title": "Java集合框架底层原理详解",
+                "updatedAt": "2026-03-18T13:41:29",
+                "userId": 2,
+                "username": "zahem"
+            },
+            {
+                "categoryId": 1,
+                "categoryName": "技术干货",
+                "id": 2,
+                "isTop": 0,
+                "subCategories": [
+                    {
+                        "id": 6,
+                        "name": "Java开发"
+                    },
+                    {
+                        "id": 7,
+                        "name": "Python编程"
+                    },
+                    {
+                        "id": 8,
+                        "name": "前端开发"
+                    }
+                ],
+                "summary": "教你使用requests+BeautifulSoup实现豆瓣电影TOP250的爬取，包含数据解析、保存到Excel和反爬策略处理。",
+                "title": "Python爬虫实战：爬取豆瓣电影TOP250",
+                "updatedAt": "2026-03-18T13:41:29",
+                "userId": 2,
+                "username": "zahem"
+            }
+        ],
+        "pageNum": 1
+    }
 }
 ```
 
