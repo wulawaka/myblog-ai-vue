@@ -41,6 +41,7 @@ export interface CreateArticleParams {
 export interface UpdateTopStatusParams {
   articleId: number
   isTop: number
+  userId?: number  // 添加 userId 字段
 }
 
 // 获取文章列表请求参数
@@ -95,7 +96,25 @@ export function deleteArticleApi(id: number) {
  * @returns Promise<void>
  */
 export function updateTopStatusApi(data: UpdateTopStatusParams) {
-  return put('/article/top', data)
+  // 从 localStorage 获取用户 ID
+  const userInfoStr = localStorage.getItem('userInfo')
+  let userId = 0
+  if (userInfoStr && userInfoStr !== 'undefined') {
+    try {
+      const userInfo = JSON.parse(userInfoStr)
+      userId = userInfo.id
+    } catch (e) {
+      console.error('解析用户信息失败:', e)
+    }
+  }
+  
+  // 将 userId 添加到请求数据中
+  const requestData = {
+    ...data,
+    userId
+  }
+  
+  return put('/article/top', requestData)
 }
 
 /**
@@ -105,5 +124,14 @@ export function updateTopStatusApi(data: UpdateTopStatusParams) {
  */
 export function getArticleDetailApi(id: number) {
   return get<Article>(`/article/${id}`)
+}
+
+/**
+ * 获取我的文章列表
+ * @param params 查询参数
+ * @returns Promise<ArticleListData>
+ */
+export function getMyArticleListApi(params: ArticleListParams) {
+  return get<ArticleListData>('/article/my-list', params)
 }
 

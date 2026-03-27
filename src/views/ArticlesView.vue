@@ -12,7 +12,7 @@
         <div class="nav-right">
           <el-input
             v-model="searchQuery"
-            placeholder="探索稀土掘金"
+            placeholder="探索这里"
             class="search-input"
             :prefix-icon="Search"
           />
@@ -105,9 +105,9 @@
         <div class="sidebar-card sign-card">
           <div class="sign-info">
             <h4>下午好！</h4>
-            <p>点亮在社区的每一天</p>
+            <p>点亮在这里的每一天</p>
           </div>
-          <el-button plain class="sign-btn">去签到</el-button>
+          <el-button plain class="sign-btn" @click="handleWriteArticle">写文章</el-button>
         </div>
 
         <div class="sidebar-card tag-card">
@@ -193,7 +193,7 @@ const handleDropdownCommand = (command: string) => {
       router.push('/profile')
       break
     case 'homepage':
-      ElMessage.info('我的主页功能开发中...')
+      router.push('/home')
       break
     case 'tags':
       ElMessage.info('标签管理功能开发中...')
@@ -267,6 +267,11 @@ const navigateTo = (path: string) => {
 
 const isActiveRoute = (path: string) => {
   return route.path === path
+}
+
+// 跳转到写文章页面
+const handleWriteArticle = () => {
+  router.push('/article/create')
 }
 </script>
 
