@@ -34,10 +34,10 @@
             @change="handleCategoryChange"
           >
             <el-option 
-              v-for="category in categories" 
-              :key="category.id" 
-              :label="category.name" 
-              :value="category.id" 
+              v-for="tag in mainTags" 
+              :key="tag.id" 
+              :label="tag.name" 
+              :value="tag.id" 
             />
           </el-select>
         </el-form-item>
@@ -50,10 +50,10 @@
             :disabled="!articleForm.categoryId"
           >
             <el-option 
-              v-for="subCategory in subCategories" 
-              :key="subCategory.id" 
-              :label="subCategory.name" 
-              :value="subCategory.id" 
+              v-for="subTag in subTags" 
+              :key="subTag.id" 
+              :label="subTag.name" 
+              :value="subTag.id" 
             />
           </el-select>
         </el-form-item>
@@ -155,6 +155,9 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { marked } from 'marked'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import { getTagTreeApi, type TagTreeNode } from '@/api/category'
+import type { AxiosError } from 'axios'
+import type { ApiResponse } from '@/utils/request'
 
 // --- 表单与验证数据 ---
 const articleFormRef = ref<FormInstance>()
@@ -174,22 +177,45 @@ const articleRules = reactive<FormRules>({
   subCategoryId: [{ required: true, message: '请选择子标签', trigger: 'change' }]
 })
 
-// --- 分类数据模拟 (保留你原有的逻辑) ---
-const categories = ref([{ id: 1, name: '前端' }, { id: 2, name: '后端' }])
-const subCategories = ref<{ id: number; name: string }[]>([])
-const allSubCategories: Record<number, { id: number; name: string }[]> = {
-  1: [{ id: 101, name: 'Vue' }, { id: 102, name: 'React' }],
-  2: [{ id: 201, name: 'Java' }, { id: 202, name: 'Python' }]
+// --- 标签数据 ---
+const mainTags = ref<TagTreeNode[]>([])
+const subTags = ref<{ id: number; name: string }[]>([])
+
+// 子标签映射表（用于快速查找）
+const allSubTagsMap = reactive<Record<number, { id: number; name: string }[]>>({})
+
+// 加载标签树
+const loadTagTree = async () => {
+  try {
+    const res = await getTagTreeApi()
+    const data = (res.data as unknown) as { data: TagTreeNode[] }
+    if (data && data.data) {
+      mainTags.value = data.data
+      // 提取所有子标签（用于快速查找）
+      data.data.forEach((mainTag: TagTreeNode) => {
+        if (mainTag.children) {
+          allSubTagsMap[mainTag.id] = mainTag.children.map(child => ({
+            id: child.id,
+            name: child.name
+          }))
+        }
+      })
+    }
+  } catch (error) {
+    console.error('获取标签树失败:', error)
+    const axiosError = error as AxiosError<ApiResponse>
+    ElMessage.error(axiosError.response?.data?.msg || '获取标签树失败，请稍后重试')
+  }
 }
 
-const fetchCategories = async () => { /* 实际项目中替换为 API */ }
-const fetchSubCategories = async (categoryId: number) => {
-  subCategories.value = allSubCategories[categoryId] || []
-}
-
-const handleCategoryChange = (val: number) => {
+// 处理主标签变化
+const handleCategoryChange = (categoryId: number) => {
   articleForm.subCategoryId = null
-  if (val) fetchSubCategories(val)
+  if (categoryId) {
+    subTags.value = allSubTagsMap[categoryId] || []
+  } else {
+    subTags.value = []
+  }
 }
 
 // --- Markdown 渲染核心 ---
@@ -328,7 +354,7 @@ const handleDraft = () => {
 }
 
 onMounted(() => {
-  fetchCategories()
+  loadTagTree()
 })
 </script>
 
