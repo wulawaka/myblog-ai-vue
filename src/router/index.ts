@@ -33,12 +33,6 @@ const router = createRouter({
               meta: { title: '文章详情' }
             },
             {
-              path: 'article/create',
-              name: 'article-create',
-              component: () => import('@/views/CreateArticleView.vue'),
-              meta: { title: '创作文章' }
-            },
-            {
               path: 'home',
               name: 'home',
               component: () => import('@/views/MyHomeView.vue'),
@@ -52,6 +46,12 @@ const router = createRouter({
           component: () => import('@/views/AboutView.vue'),
         },
       ],
+    },
+    {
+      path: '/article/create',
+      name: 'article-create',
+      component: () => import('@/views/CreateArticleView.vue'),
+      meta: { title: '创作文章' },
     },
     {
       path: '/login',
