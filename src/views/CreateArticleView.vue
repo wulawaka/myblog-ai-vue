@@ -158,6 +158,8 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { getTagTreeApi, type TagTreeNode } from '@/api/category'
 import type { AxiosError } from 'axios'
 import type { ApiResponse } from '@/utils/request'
+import { createArticleApi, type CreateArticleParams } from '@/api/article'
+import router from '@/router'
 
 // --- 表单与验证数据 ---
 const articleFormRef = ref<FormInstance>()
@@ -335,13 +337,68 @@ const insertTable = () => {
 }
 
 // --- 操作逻辑 ---
-const submitArticle = async () => {
+const submitArticle = async (isDraft = false) => {
   if (!articleFormRef.value) return
-  await articleFormRef.value.validate((valid, fields) => {
+  
+  await articleFormRef.value.validate(async (valid, fields) => {
     if (valid) {
-      console.log('提交的数据：', articleForm)
-      ElMessage.success('文章发布成功！')
-      // router.push('/') 等后续跳转
+      try {
+        // 从 localStorage 获取用户信息
+        const userInfoStr = localStorage.getItem('userInfo')
+        let userId = 0
+        if (userInfoStr && userInfoStr !== 'undefined') {
+          try {
+            const userInfo = JSON.parse(userInfoStr)
+            userId = userInfo.id
+          } catch (e) {
+            console.error('解析用户信息失败:', e)
+            ElMessage.error('用户信息异常，请重新登录')
+            return
+          }
+        }
+        
+        // 构建请求参数
+        const articleData: CreateArticleParams = {
+          userId,
+          categoryId: articleForm.categoryId!,
+          title: articleForm.title,
+          summary: articleForm.summary,
+          content: articleForm.content,
+          isTop: 0,
+          isDraft: 0, // 发布文章时始终为 0
+          isDeleted: 0
+        }
+        
+        // 如果有子标签，添加 scategoryId 参数
+        if (articleForm.subCategoryId) {
+          articleData.scategoryId = String(articleForm.subCategoryId)
+        }
+        
+        console.log('提交的数据：', articleData)
+        
+        // 调用创建文章 API
+        const res = await createArticleApi(articleData)
+        // 注意：由于响应拦截器返回的是完整的 AxiosResponse
+        // 所以 res.data 才是实际的 API 响应数据
+        console.log('API 返回:', res)
+        console.log('API 响应数据:', res.data)
+        
+        // 类型断言：将 res.data 断言为 ApiResponse<Article>
+        const apiResponse = res.data as unknown as ApiResponse<{ id: number }>
+        console.log('响应 code:', apiResponse.code)
+        
+        if (apiResponse.code === 20201) {
+          ElMessage.success(isDraft ? '草稿已保存！' : '文章发布成功！')
+          // 跳转到首页或我的文章页面
+          router.push('/')
+        } else {
+          ElMessage.error(apiResponse.msg || '发布失败')
+        }
+      } catch (error) {
+        console.error('发布文章失败:', error)
+        const axiosError = error as AxiosError<ApiResponse>
+        ElMessage.error(axiosError.response?.data?.msg || '发布失败，请稍后重试')
+      }
     } else {
       console.log('验证失败', fields)
       ElMessage.error('请完善必填信息')
@@ -350,7 +407,7 @@ const submitArticle = async () => {
 }
 
 const handleDraft = () => {
-  ElMessage.success('草稿已保存')
+  submitArticle(true)
 }
 
 onMounted(() => {
