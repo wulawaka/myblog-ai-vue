@@ -54,6 +54,15 @@ export interface ArticleListParams {
   [key: string]: number | string | undefined
 }
 
+// 查询文章状态请求参数
+export interface ArticleStatusParams {
+  articleId?: number  // 可选，不传表示查询所有
+  isDraft: number
+  isDeleted?: number
+  pageNum?: number
+  pageSize?: number
+}
+
 // 文章列表响应类型
 export interface ArticleListData {
   list: Article[]
@@ -133,5 +142,14 @@ export function getArticleDetailApi(id: number) {
  */
 export function getMyArticleListApi(params: ArticleListParams) {
   return get<ArticleListData>('/article/my-list', params)
+}
+
+/**
+ * 分页查询文章状态
+ * @param data 查询参数
+ * @returns Promise<ArticleListData>
+ */
+export function getArticleStatusApi(data: ArticleStatusParams) {
+  return post<ArticleListData>('/article/status', data)
 }
 

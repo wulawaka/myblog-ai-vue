@@ -103,7 +103,7 @@ const goToProfile = () => {
   width: 100%;
   min-height: calc(100vh - 60px);
   background-color: #f4f5f5;
-  padding: 24px 0 40px 0;
+  /* padding: 24px 0 40px 0; */
   box-sizing: border-box;
 }
 
