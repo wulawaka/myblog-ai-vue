@@ -152,14 +152,18 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { marked } from 'marked'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { getTagTreeApi, type TagTreeNode } from '@/api/category'
 import type { AxiosError } from 'axios'
 import type { ApiResponse } from '@/utils/request'
-import { createArticleApi, type CreateArticleParams } from '@/api/article'
+import { createArticleApi, getArticleDetailApi, type CreateArticleParams, type Article } from '@/api/article'
 import router from '@/router'
+
+// --- 路由 ---
+const route = useRoute()
 
 // --- 表单与验证数据 ---
 const articleFormRef = ref<FormInstance>()
@@ -186,6 +190,10 @@ const subTags = ref<{ id: number; name: string }[]>([])
 // 子标签映射表（用于快速查找）
 const allSubTagsMap = reactive<Record<number, { id: number; name: string }[]>>({})
 
+// 当前是否为编辑模式
+const isEditMode = ref(false)
+const editArticleId = ref<number | null>(null)
+
 // 加载标签树
 const loadTagTree = async () => {
   try {
@@ -202,11 +210,52 @@ const loadTagTree = async () => {
           }))
         }
       })
+      
+      // 如果是编辑模式，加载文章详情
+      if (isEditMode.value && editArticleId.value) {
+        await loadArticleForEdit(editArticleId.value)
+      }
     }
   } catch (error) {
     console.error('获取标签树失败:', error)
     const axiosError = error as AxiosError<ApiResponse>
     ElMessage.error(axiosError.response?.data?.msg || '获取标签树失败，请稍后重试')
+  }
+}
+
+// 加载编辑文章的详情
+const loadArticleForEdit = async (articleId: number) => {
+  try {
+    const res = await getArticleDetailApi(articleId)
+    const data = (res.data as unknown) as { data: Article }
+    
+    if (data && data.data) {
+      const article = data.data
+      // 填充表单
+      articleForm.title = article.title
+      articleForm.summary = article.summary
+      articleForm.content = article.content
+      articleForm.categoryId = article.categoryId
+      
+      // 如果有子标签，设置子标签
+      if (article.subCategoryIds) {
+        const subCategoryId = parseInt(article.subCategoryIds)
+        if (!isNaN(subCategoryId)) {
+          articleForm.subCategoryId = subCategoryId
+          // 确保子标签列表已加载
+          const subTagsForCategory = allSubTagsMap[article.categoryId]
+          if (subTagsForCategory) {
+            subTags.value = subTagsForCategory
+          }
+        }
+      }
+      
+      ElMessage.success('文章已加载，可以编辑')
+    }
+  } catch (error) {
+    console.error('加载文章详情失败:', error)
+    const axiosError = error as AxiosError<ApiResponse>
+    ElMessage.error(axiosError.response?.data?.msg || '加载文章详情失败，请稍后重试')
   }
 }
 
@@ -411,6 +460,11 @@ const handleDraft = () => {
 }
 
 onMounted(() => {
+  // 检查是否是编辑模式
+  if (route.query.editId) {
+    isEditMode.value = true
+    editArticleId.value = parseInt(route.query.editId as string)
+  }
   loadTagTree()
 })
 </script>

@@ -21,7 +21,7 @@
                     type="success" 
                     size="small" 
                     link
-                    @click.stop="recoverDraft(article.id)"
+                    @click.stop="editArticle(article.id)"
                   >
                     <el-icon><Refresh /></el-icon> 编辑
                   </el-button>
@@ -59,7 +59,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { View, Star, ChatDotRound, Refresh } from '@element-plus/icons-vue'
-import { getArticleStatusApi, type Article } from '@/api/article'
+import { getArticleStatusApi, getArticleDetailApi, type Article } from '@/api/article'
 
 const router = useRouter()
 const loading = ref(false)
@@ -96,11 +96,28 @@ const navigateToArticle = (articleId: number) => {
   router.push(`/article/${articleId}`)
 }
 
-// 恢复草稿 (功能待实现)
-const recoverDraft = (articleId: number) => {
-  ElMessage.info(`恢复草稿 ${articleId} (功能开发中)`)
-  // TODO: 后续实现恢复功能
+// 编辑草稿 - 获取文章详情并跳转到创作页面
+const editArticle = async (articleId: number) => {
+  try {
+    const res = await getArticleDetailApi(articleId)
+    
+    // 解析响应数据
+    const data = (res.data as unknown) as { data: Article }
+    if (data && data.data) {
+      // 跳转到创作页面，通过 query 传递文章 ID
+      router.push({
+        path: '/article/create',
+        query: {
+          editId: articleId.toString()
+        }
+      })
+    }
+  } catch (error) {
+    console.error('获取文章详情失败:', error)
+    ElMessage.error('获取文章详情失败，请稍后重试')
+  }
 }
+
 
 // 加载草稿列表
 const loadDraftList = async () => {
