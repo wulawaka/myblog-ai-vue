@@ -1,7 +1,7 @@
 /**
  * 分类模块 API
  */
-import { get, post, del } from '@/utils/request'
+import { get, post, put, del } from '@/utils/request'
 
 // 标签树节点类型
 export interface TagTreeNode {
@@ -23,6 +23,12 @@ export interface CreateSubTagParams {
 
 // 删除标签请求参数
 export interface DeleteTagParams {
+  name: string
+}
+
+// 更新标签名称请求参数
+export interface UpdateTagNameParams {
+  id: number
   name: string
 }
 
@@ -51,6 +57,15 @@ export function createSubTagApi(data: CreateSubTagParams) {
  */
 export function deleteTagApi(data: DeleteTagParams) {
   return del('/category/tag', { data })
+}
+
+/**
+ * 更新标签名称
+ * @param data 标签 ID 和新名称
+ * @returns Promise<{id: number, name: string, parentId: number, updatedAt: string}>
+ */
+export function updateTagNameApi(data: UpdateTagNameParams) {
+  return put('/category/change-tag-name', data)
 }
 
 /**

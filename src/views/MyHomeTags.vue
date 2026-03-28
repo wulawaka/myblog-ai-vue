@@ -91,12 +91,34 @@
           <el-input :value="currentParentTag?.name" disabled />
         </el-form-item>
         <el-form-item label="子标签名称" prop="name">
-          <el-input v-model="subTagForm.name" placeholder="请输入子标签名称（1-6 位字符）" maxlength="6" />
+          <el-input v-model="subTagForm.name" placeholder="请输入子标签名称 (1-6 位字符)" maxlength="6" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showAddSubTagDialog = false">取消</el-button>
         <el-button type="primary" @click="handleAddSubTag" :loading="submitting">确定</el-button>
+      </template>
+    </el-dialog>
+    
+    <!-- 编辑标签对话框 -->
+    <el-dialog
+      v-model="showEditTagDialog"
+      title="编辑标签"
+      width="400px"
+      :close-on-click-modal="false"
+      @close="resetEditTagForm"
+    >
+      <el-form :model="editTagForm" :rules="editTagRules" ref="editTagFormRef" label-width="80px">
+        <el-form-item label="标签 ID">
+          <el-input :value="String(editTagForm.id)" disabled />
+        </el-form-item>
+        <el-form-item label="标签名称" prop="name">
+          <el-input v-model="editTagForm.name" placeholder="请输入标签名称 (1-6 位字符)" maxlength="6" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showEditTagDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleEditTag" :loading="submitting">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -106,7 +128,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Plus, Folder, PriceTag, Edit, Delete } from '@element-plus/icons-vue'
-import { getTagTreeApi, createMainTagApi, createSubTagApi, deleteTagApi, type TagTreeNode } from '@/api/category'
+import { getTagTreeApi, createMainTagApi, createSubTagApi, deleteTagApi, updateTagNameApi, type TagTreeNode } from '@/api/category'
 import type { AxiosError } from 'axios'
 import type { ApiResponse } from '@/utils/request'
 
@@ -115,7 +137,9 @@ const submitting = ref(false)
 const tagTreeList = ref<TagTreeNode[]>([])
 const showAddMainTagDialog = ref(false)
 const showAddSubTagDialog = ref(false)
+const showEditTagDialog = ref(false)
 const currentParentTag = ref<TagTreeNode | null>(null)
+const currentEditTag = ref<TagTreeNode | null>(null)
 
 // 树形结构配置
 const treeProps = {
@@ -145,6 +169,19 @@ const subTagRules: FormRules = {
   name: [
     { required: true, message: '请输入子标签名称', trigger: 'blur' },
     { min: 1, max: 6, message: '子标签名称长度为 1-6 位字符', trigger: 'blur' },
+  ],
+}
+
+// 编辑标签表单
+const editTagFormRef = ref<FormInstance>()
+const editTagForm = ref({
+  id: 0,
+  name: '',
+})
+const editTagRules: FormRules = {
+  name: [
+    { required: true, message: '请输入标签名称', trigger: 'blur' },
+    { min: 1, max: 6, message: '标签名称长度为 1-6 位字符', trigger: 'blur' },
   ],
 }
 
@@ -214,10 +251,40 @@ const handleAddSubTag = async () => {
   })
 }
 
-// 编辑子标签（预留功能）
+// 编辑子标签
 const editSubTag = (tag: TagTreeNode) => {
-  ElMessage.info(`编辑子标签：${tag.name}（功能开发中）`)
-  // TODO: 后续实现编辑功能
+  currentEditTag.value = tag
+  editTagForm.value = {
+    id: tag.id,
+    name: tag.name,
+  }
+  showEditTagDialog.value = true
+}
+
+// 更新标签名称
+const handleEditTag = async () => {
+  if (!editTagFormRef.value || !currentEditTag.value) return
+  
+  await editTagFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    
+    submitting.value = true
+    try {
+      await updateTagNameApi({
+        id: editTagForm.value.id,
+        name: editTagForm.value.name,
+      })
+      ElMessage.success('更新成功')
+      showEditTagDialog.value = false
+      await loadTagTree()
+    } catch (error) {
+      console.error('更新失败:', error)
+      const axiosError = error as AxiosError<ApiResponse>
+      ElMessage.error(axiosError.response?.data?.msg || '更新失败，请稍后重试')
+    } finally {
+      submitting.value = false
+    }
+  })
 }
 
 // 删除标签
@@ -255,6 +322,13 @@ const resetMainTagForm = () => {
 const resetSubTagForm = () => {
   subTagForm.value = { parentId: 0, name: '' }
   subTagFormRef.value?.clearValidate()
+}
+
+// 重置编辑表单
+const resetEditTagForm = () => {
+  editTagForm.value = { id: 0, name: '' }
+  editTagFormRef.value?.clearValidate()
+  currentEditTag.value = null
 }
 
 onMounted(() => {
