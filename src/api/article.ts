@@ -57,7 +57,7 @@ export interface ArticleListParams {
 // 查询文章状态请求参数
 export interface ArticleStatusParams {
   articleId?: number  // 可选，不传表示查询所有
-  isDraft: number
+  isDraft?: number
   isDeleted?: number
   pageNum?: number
   pageSize?: number

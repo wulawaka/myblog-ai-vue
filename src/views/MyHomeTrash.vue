@@ -108,7 +108,7 @@ const loadTrashList = async () => {
   try {
     // 调用 API 查询已删除的文章
     const res = await getArticleStatusApi({
-      isDraft: 0,    // 已发布文章
+      //isDraft: 0,    // 已发布文章
       isDeleted: 1,  // 已删除状态
       pageNum: pageNum.value,
       pageSize: pageSize.value
