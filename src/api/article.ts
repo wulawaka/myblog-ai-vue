@@ -96,7 +96,7 @@ export function getArticleListApi(params: ArticleListParams) {
  * @returns Promise<void>
  */
 export function deleteArticleApi(id: number) {
-  return del(`/article/${id}`)
+  return del(`/article/delete/${id}`)
 }
 
 /**

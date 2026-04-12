@@ -63,7 +63,15 @@
             </div>
             
             <div class="scroll-viewport" ref="tabsContainer">
-              <a v-for="tag in tagTreeList" :key="tag.id" href="#">{{ tag.name }}</a>
+              <a 
+                v-for="tag in tagTreeList" 
+                :key="tag.id" 
+                href="#"
+                @click.prevent="handleTagClick(tag.id)"
+                :class="{ active: selectedCategoryId === tag.id }"
+              >
+                {{ tag.name }}
+              </a>
             </div>
 
             <div class="scroll-arrow right-arrow" @click="scrollTabs(150)">
@@ -157,6 +165,9 @@ const pageSize = ref(10)
 // 标签树列表
 const tagTreeList = ref<TagTreeNode[]>([])
 
+// 当前选中的分类 ID（null 表示全部）
+const selectedCategoryId = ref<number | null>(null)
+
 // 【修改】标签栏滚动逻辑，接收一个偏移量参数，正数向右，负数向左
 const tabsContainer = ref<HTMLElement | null>(null)
 const scrollTabs = (offset: number) => {
@@ -218,7 +229,17 @@ const navigateToArticle = (articleId: number) => {
 
 const loadArticleList = async () => {
   try {
-    const res = await getArticleListApi({ pageNum: pageNum.value, pageSize: pageSize.value })
+    const params: Record<string, string | number | undefined> = { 
+      pageNum: pageNum.value, 
+      pageSize: pageSize.value 
+    }
+    
+    // 如果有选中的分类，添加 categoryId 参数
+    if (selectedCategoryId.value) {
+      params.categoryId = selectedCategoryId.value
+    }
+    
+    const res = await getArticleListApi(params)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = (res.data as any)
     if (data && data.data && data.data.list) {
@@ -272,6 +293,22 @@ const isActiveRoute = (path: string) => {
 // 跳转到写文章页面
 const handleWriteArticle = () => {
   router.push('/article/create')
+}
+
+// 处理标签点击事件
+const handleTagClick = async (categoryId: number) => {
+  // 如果点击的是已选中的标签，取消选中（显示全部）
+  if (selectedCategoryId.value === categoryId) {
+    selectedCategoryId.value = null
+  } else {
+    selectedCategoryId.value = categoryId
+  }
+  
+  // 重置页码
+  pageNum.value = 1
+  
+  // 重新加载文章列表
+  await loadArticleList()
 }
 </script>
 
@@ -494,6 +531,13 @@ const handleWriteArticle = () => {
 }
 .scroll-viewport a:hover {
   color: #1e80ff;
+}
+/* 选中的标签高亮样式 */
+.scroll-viewport a.active {
+  color: #1e80ff;
+  font-weight: 600;
+  border-bottom: 2px solid #1e80ff;
+  padding-bottom: 2px;
 }
 
 /* 左右滚动箭头的通用样式 */

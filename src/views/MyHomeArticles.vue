@@ -144,7 +144,6 @@ const deleteArticle = async (articleId: number) => {
     await loadArticleList()
   } catch (error: unknown) {
     if (error !== 'cancel') {
-      console.error('删除失败:', error)
       ElMessage.error('删除失败，请稍后重试')
     }
   }

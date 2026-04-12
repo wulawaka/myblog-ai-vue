@@ -359,7 +359,7 @@ onMounted(() => {
 }
 
 .tags-tree-container {
-  padding: 20px;
+  /*padding: 20px;*/
 }
 
 .tree-node {
