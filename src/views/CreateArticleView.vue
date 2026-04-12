@@ -60,7 +60,7 @@
 
         <div class="form-actions">
           <el-button size="large" @click="handleDraft">存草稿</el-button>
-          <el-button type="primary" size="large" @click="submitArticle">发布文章</el-button>
+          <el-button type="primary" size="large" @click="submitArticle(false)">发布文章</el-button>
         </div>
       </el-form>
     </header>
@@ -414,7 +414,7 @@ const submitArticle = async (isDraft = false) => {
           summary: articleForm.summary,
           content: articleForm.content,
           isTop: 0,
-          isDraft: 0, // 发布文章时始终为 0
+          isDraft: isDraft ? 1 : 0, // 根据参数设置草稿状态
           isDeleted: 0
         }
         
@@ -455,7 +455,16 @@ const submitArticle = async (isDraft = false) => {
   })
 }
 
+// 存草稿 - 简化版验证
 const handleDraft = () => {
+  // 检查所有必填字段是否有值
+  if (!articleForm.title || !articleForm.summary || !articleForm.content || 
+      !articleForm.categoryId || !articleForm.subCategoryId) {
+    ElMessage.warning('请填写完整')
+    return
+  }
+  
+  // 调用提交函数，传入 isDraft=true
   submitArticle(true)
 }
 
