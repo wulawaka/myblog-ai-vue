@@ -124,8 +124,9 @@
       <aside v-if="$route.name === 'articles'" class="sidebar">
         <div class="sidebar-card sign-card">
           <div class="sign-info">
-            <h4>下午好！</h4>
-            <p>点亮在这里的每一天</p>
+            <h4>{{ greetingText }}！</h4>
+            <p class="current-time">{{ currentTime }}</p>
+            <p class="current-weekday">{{ currentWeekday }}</p>
           </div>
           <el-button plain class="sign-btn" @click="handleWriteArticle">写文章</el-button>
         </div>
@@ -154,7 +155,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 // 【新增】引入了 ArrowLeft 图标
@@ -177,6 +178,11 @@ const total = ref(0) // 总记录数
 
 // 当前选中的 Tab（recommend: 推荐, latest: 最新, top: 置顶）
 const currentTab = ref<'recommend' | 'latest' | 'top'>('recommend')
+
+// 动态时间和星期
+const currentTime = ref('')
+const currentWeekday = ref('')
+let timeInterval: number | null = null
 
 // 标签树列表
 const tagTreeList = ref<TagTreeNode[]>([])
@@ -206,6 +212,55 @@ const updateUserInfo = () => {
     username.value = ''
     greetingText.value = '您还没有登录'
   }
+}
+
+// 更新问候语（根据时间）
+const updateGreetingByTime = () => {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 9) {
+    return '早上好'
+  } else if (hour >= 9 && hour < 12) {
+    return '上午好'
+  } else if (hour >= 12 && hour < 14) {
+    return '中午好'
+  } else if (hour >= 14 && hour < 18) {
+    return '下午好'
+  } else if (hour >= 18 && hour < 22) {
+    return '晚上好'
+  } else {
+    return '晚安'
+  }
+}
+
+// 更新时间显示
+const updateTimeDisplay = () => {
+  const now = new Date()
+  
+  // 格式化时间：HH:MM:SS
+  const hours = String(now.getHours()).padStart(2, '0')
+  const minutes = String(now.getMinutes()).padStart(2, '0')
+  const seconds = String(now.getSeconds()).padStart(2, '0')
+  currentTime.value = `${hours}:${minutes}:${seconds}`
+  
+  // 格式化星期
+  const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+  currentWeekday.value = weekdays[now.getDay()] as string
+  
+  // 更新问候语
+  const timeGreeting = updateGreetingByTime()
+  if (isLogin.value && username.value) {
+    greetingText.value = `${timeGreeting}！${username.value}`
+  } else if (isLogin.value) {
+    greetingText.value = timeGreeting
+  } else {
+    greetingText.value = timeGreeting
+  }
+}
+
+// 启动时间更新定时器
+const startTimeUpdate = () => {
+  updateTimeDisplay()
+  timeInterval = window.setInterval(updateTimeDisplay, 1000)
 }
 
 const handleGreetingClick = () => {
@@ -350,6 +405,14 @@ onMounted(() => {
   }, 100)
   loadArticleList()
   loadTagTree()
+  startTimeUpdate() // 启动时间更新
+})
+
+// 组件卸载时清除定时器
+onUnmounted(() => {
+  if (timeInterval) {
+    clearInterval(timeInterval)
+  }
 })
 
 const navigateTo = (path: string) => {
@@ -388,6 +451,7 @@ const handlePageChange = async (page: number) => {
   // 滚动到顶部
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
+
 </script>
 
 <style scoped>
@@ -750,15 +814,29 @@ const handlePageChange = async (page: number) => {
 }
 
 .sign-info h4 {
-  margin: 0 0 4px 0;
+  margin: 0 0 8px 0;
   font-size: 16px;
   color: #1d2129;
 }
 
 .sign-info p {
   margin: 0;
-  font-size: 12px;
+  /*font-size: 12px;*/
   color: #8a919f;
+}
+
+.current-time {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1e80ff;
+  margin: 8px 0 !important;
+  font-family: 'Courier New', monospace;
+}
+
+.current-weekday {
+  font-size: 13px;
+  color: #515767;
+  margin: 0 !important;
 }
 
 .sign-btn {
