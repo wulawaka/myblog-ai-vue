@@ -28,6 +28,7 @@
                 <el-dropdown-item command="homepage">我的主页</el-dropdown-item>
                 <el-dropdown-item command="tags">标签管理</el-dropdown-item>
                 <el-dropdown-item command="drafts">草稿箱</el-dropdown-item>
+                <el-dropdown-item command="trash">回收站</el-dropdown-item>
                 <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -97,7 +98,7 @@
                   <div class="article-meta-bottom">
                     <span class="author">{{ (article as any).username || '未知作者' }}</span>
                     <span class="divider">|</span>
-                    <span class="date">2 小时前</span>
+                    <span class="date">{{ formatTime(article.updatedAt) }}</span>
                     <span class="divider">|</span>
                     <span class="tag">{{ (article as any).categoryName || '前端' }}</span>
                   </div>
@@ -219,10 +220,13 @@ const handleDropdownCommand = (command: string) => {
       router.push('/home')
       break
     case 'tags':
-      ElMessage.info('标签管理功能开发中...')
+      router.push({ path: '/home', query: { tab: 'tags' } })
       break
     case 'drafts':
-      ElMessage.info('草稿箱功能开发中...')
+      router.push({ path: '/home', query: { tab: 'drafts' } })
+      break
+    case 'trash':
+      router.push({ path: '/home', query: { tab: 'trash' } })
       break
     case 'logout':
       handleLogout()
@@ -237,6 +241,30 @@ const handleLogout = () => {
 // 跳转到文章详情页
 const navigateToArticle = (articleId: number) => {
   router.push(`/article/${articleId}`)
+}
+
+// 格式化时间
+const formatTime = (time: string) => {
+  const date = new Date(time)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  
+  const minute = 60 * 1000
+  const hour = 60 * minute
+  const day = 24 * hour
+  const month = 30 * day
+  
+  if (diff < minute) {
+    return '刚刚'
+  } else if (diff < hour) {
+    return `${Math.floor(diff / minute)}分钟前`
+  } else if (diff < day) {
+    return `${Math.floor(diff / hour)}小时前`
+  } else if (diff < month) {
+    return `${Math.floor(diff / day)}天前`
+  } else {
+    return date.toLocaleDateString()
+  }
 }
 
 const loadArticleList = async () => {

@@ -65,14 +65,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, reactive, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import MyHomeArticles from './MyHomeArticles.vue'
 import MyHomeTags from './MyHomeTags.vue'
 import MyHomeDrafts from './MyHomeDrafts.vue'
 import MyHomeTrash from './MyHomeTrash.vue'
 
 const router = useRouter()
+const route = useRoute()
 
 // 默认激活第一个 Tab
 const activeTab = ref('articles')
@@ -94,6 +95,14 @@ const handleTabChange = (tabName: string) => {
     refreshKey.trash++
   }
 }
+
+// 根据路由参数设置激活的 Tab
+onMounted(() => {
+  const tab = route.query.tab as string
+  if (tab && ['articles', 'tags', 'drafts', 'trash'].includes(tab)) {
+    activeTab.value = tab
+  }
+})
 
 // 获取当前登录用户的用户名
 const username = computed(() => {
