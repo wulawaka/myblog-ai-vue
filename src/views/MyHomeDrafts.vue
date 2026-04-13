@@ -51,6 +51,17 @@
       
       <el-empty v-else description="暂无草稿" />
     </div>
+    
+    <!-- 分页组件 -->
+    <div class="pagination-container" v-if="draftList.length > 0">
+      <el-pagination
+        v-model:current-page="pageNum"
+        :page-size="pageSize"
+        :total="total"
+        layout="prev, pager, next, jumper"
+        @current-change="handlePageChange"
+      />
+    </div>
   </div>
 </template>
 
@@ -66,6 +77,7 @@ const loading = ref(false)
 const draftList = ref<Article[]>([])
 const pageNum = ref(1)
 const pageSize = ref(10)
+const total = ref(0) // 总记录数
 
 // 格式化时间
 const formatTime = (time: string) => {
@@ -132,9 +144,11 @@ const loadDraftList = async () => {
     })
     
     // 解析响应数据
-    const data = (res.data as unknown) as { data: { list: Article[] } }
+    const data = (res.data as unknown) as { data: { list: Article[]; total: number } }
     if (data && data.data && data.data.list) {
       draftList.value = data.data.list
+      // 保存总记录数
+      total.value = data.data.total || 0
     }
   } catch (error) {
     console.error('获取草稿列表失败:', error)
@@ -142,6 +156,12 @@ const loadDraftList = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 处理分页变化
+const handlePageChange = async (page: number) => {
+  pageNum.value = page
+  await loadDraftList()
 }
 
 onMounted(() => {
@@ -293,6 +313,15 @@ onMounted(() => {
   border-radius: 2px;
   color: #515767;
   font-size: 12px;
+}
+
+/* 分页容器样式 */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 30px 20px;
+  background: #fff;
 }
 
 .drafts-list-placeholder {

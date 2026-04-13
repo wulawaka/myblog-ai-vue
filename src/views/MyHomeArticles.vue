@@ -77,6 +77,17 @@
       
       <el-empty v-else description="暂无文章" />
     </div>
+    
+    <!-- 分页组件 -->
+    <div class="pagination-container" v-if="articleList.length > 0">
+      <el-pagination
+        v-model:current-page="pageNum"
+        :page-size="pageSize"
+        :total="total"
+        layout="prev, pager, next, jumper"
+        @current-change="handlePageChange"
+      />
+    </div>
   </div>
 </template>
 
@@ -93,6 +104,7 @@ const loading = ref(false)
 const articleList = ref<Article[]>([])
 const pageNum = ref(1)
 const pageSize = ref(10)
+const total = ref(0) // 总记录数
 
 // 格式化时间
 const formatTime = (time: string) => {
@@ -171,6 +183,8 @@ const loadArticleList = async () => {
     const data = (res.data as any)
     if (data && data.data && data.data.list) {
       articleList.value = data.data.list
+      // 保存总记录数
+      total.value = data.data.total || 0
     }
   } catch (error) {
     console.error('获取文章列表失败:', error)
@@ -178,6 +192,12 @@ const loadArticleList = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 处理分页变化
+const handlePageChange = async (page: number) => {
+  pageNum.value = page
+  await loadArticleList()
 }
 
 onMounted(() => {
@@ -317,5 +337,14 @@ onMounted(() => {
   border-radius: 2px;
   color: #515767;
   font-size: 12px;
+}
+
+/* 分页容器样式 */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 30px 20px;
+  background: #fff;
 }
 </style>

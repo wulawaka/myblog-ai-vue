@@ -107,6 +107,17 @@
             </div>
           </div>
         </div>
+        
+        <!-- 分页组件 -->
+        <div class="pagination-container">
+          <el-pagination
+            v-model:current-page="pageNum"
+            :page-size="pageSize"
+            :total="total"
+            layout="prev, pager, next, jumper"
+            @current-change="handlePageChange"
+          />
+        </div>
       </div>
 
       <aside v-if="$route.name === 'articles'" class="sidebar">
@@ -161,6 +172,7 @@ const greetingText = ref('您还没有登录')
 const articleList = ref<Article[]>([])
 const pageNum = ref(1)
 const pageSize = ref(10)
+const total = ref(0) // 总记录数
 
 // 标签树列表
 const tagTreeList = ref<TagTreeNode[]>([])
@@ -244,6 +256,8 @@ const loadArticleList = async () => {
     const data = (res.data as any)
     if (data && data.data && data.data.list) {
       articleList.value = data.data.list
+      // 保存总记录数
+      total.value = data.data.total || 0
     }
   } catch (error) {
     console.error('获取文章列表失败:', error)
@@ -309,6 +323,14 @@ const handleTagClick = async (categoryId: number) => {
   
   // 重新加载文章列表
   await loadArticleList()
+}
+
+// 处理分页变化
+const handlePageChange = async (page: number) => {
+  pageNum.value = page
+  await loadArticleList()
+  // 滚动到顶部
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 </script>
 
@@ -577,6 +599,15 @@ const handleTagClick = async (categoryId: number) => {
   border-bottom: 1px solid #e4e6eb;
   cursor: pointer;
   transition: background-color 0.2s;
+}
+
+/* 分页容器样式 */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 30px 20px;
+  background: #fff;
 }
 
 .article-item:hover {
