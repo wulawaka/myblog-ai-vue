@@ -25,6 +25,14 @@
                   >
                     <el-icon><Refresh /></el-icon> 恢复
                   </el-button>
+                  <el-button 
+                    type="danger" 
+                    size="small" 
+                    link
+                    @click.stop="confirmDelete(article.id)"
+                  >
+                    <el-icon><Delete /></el-icon> 删除
+                  </el-button>
                 </div>
               </div>
               <p class="abstract">{{ article.summary }}</p>
@@ -68,9 +76,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { View, Star, ChatDotRound, Refresh } from '@element-plus/icons-vue'
-import { getArticleStatusApi, type Article } from '@/api/article'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { View, Star, ChatDotRound, Refresh, Delete } from '@element-plus/icons-vue'
+import { getArticleStatusApi, permanentDeleteArticleApi, type Article } from '@/api/article'
 
 const router = useRouter()
 const loading = ref(false)
@@ -112,6 +120,33 @@ const navigateToArticle = (articleId: number) => {
 const recoverArticle = (articleId: number) => {
   ElMessage.info(`恢复文章 ${articleId} (功能开发中)`)
   // TODO: 后续实现恢复功能
+}
+
+// 确认删除文章（二次确认弹窗）
+const confirmDelete = async (articleId: number) => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要永久删除这篇文章吗？此操作不可恢复！',
+      '警告',
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+    
+    // 调用 API 物理删除文章
+    await permanentDeleteArticleApi(articleId)
+    ElMessage.success('删除成功')
+    
+    // 重新加载列表
+    await loadTrashList()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除失败:', error)
+      ElMessage.error('删除失败，请稍后重试')
+    }
+  }
 }
 
 // 加载回收站列表

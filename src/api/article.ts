@@ -100,6 +100,15 @@ export function deleteArticleApi(id: number) {
 }
 
 /**
+ * 物理删除文章（永久删除）
+ * @param id 文章 ID
+ * @returns Promise<void>
+ */
+export function permanentDeleteArticleApi(id: number) {
+  return del(`/article/permanent/${id}`)
+}
+
+/**
  * 更新文章置顶状态
  * @param data 文章 ID 和置顶状态
  * @returns Promise<void>
