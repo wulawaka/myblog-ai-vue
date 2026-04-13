@@ -151,10 +151,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { marked } from 'marked'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { getTagTreeApi, type TagTreeNode } from '@/api/category'
 import type { AxiosError } from 'axios'
@@ -193,6 +193,80 @@ const allSubTagsMap = reactive<Record<number, { id: number; name: string }[]>>({
 // 当前是否为编辑模式
 const isEditMode = ref(false)
 const editArticleId = ref<number | null>(null)
+
+// 自动保存相关
+let autoSaveTimer: number | null = null
+const AUTO_SAVE_KEY = 'article_draft_auto_save'
+
+// 自动保存到 localStorage
+const autoSaveToLocalStorage = () => {
+  const draftData = {
+    title: articleForm.title,
+    summary: articleForm.summary,
+    content: articleForm.content,
+    categoryId: articleForm.categoryId,
+    subCategoryId: articleForm.subCategoryId,
+    timestamp: new Date().toISOString()
+  }
+  localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(draftData))
+  
+  // 显示保存提示（使用 ElMessage，不会打断用户输入）
+  ElMessage({
+    message: '已自动保存草稿',
+    type: 'success',
+    duration: 2000,
+    showClose: true
+  })
+}
+
+// 防抖函数：用户停止输入3秒后自动保存
+const debounceAutoSave = () => {
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer)
+  }
+  autoSaveTimer = window.setTimeout(() => {
+    // 只有当有内容时才保存
+    if (articleForm.title || articleForm.summary || articleForm.content) {
+      autoSaveToLocalStorage()
+    }
+  }, 3000)
+}
+
+// 从 localStorage 恢复草稿
+const loadDraftFromLocalStorage = () => {
+  try {
+    const savedData = localStorage.getItem(AUTO_SAVE_KEY)
+    if (savedData) {
+      const draftData = JSON.parse(savedData)
+      
+      // 询问用户是否恢复
+      ElMessageBox.confirm(
+        `检测到未保存的草稿（${new Date(draftData.timestamp).toLocaleString()}），是否恢复？`,
+        '提示',
+        {
+          confirmButtonText: '恢复',
+          cancelButtonText: '放弃',
+          type: 'warning',
+        }
+      ).then(() => {
+        // 用户选择恢复
+        articleForm.title = draftData.title || ''
+        articleForm.summary = draftData.summary || ''
+        articleForm.content = draftData.content || ''
+        articleForm.categoryId = draftData.categoryId || null
+        articleForm.subCategoryId = draftData.subCategoryId || null
+        
+        ElMessage.success('草稿已恢复')
+      }).catch(() => {
+        // 用户选择放弃，清除本地存储
+        localStorage.removeItem(AUTO_SAVE_KEY)
+        ElMessage.info('已放弃草稿')
+      })
+    }
+  } catch (error) {
+    console.error('加载草稿失败:', error)
+  }
+}
 
 // 加载标签树
 const loadTagTree = async () => {
@@ -438,6 +512,8 @@ const submitArticle = async (isDraft = false) => {
         
         if (apiResponse.code === 20201) {
           ElMessage.success(isDraft ? '草稿已保存！' : '文章发布成功！')
+          // 清除 localStorage 中的自动保存草稿
+          localStorage.removeItem(AUTO_SAVE_KEY)
           // 跳转到首页或我的文章页面
           router.push('/')
         } else {
@@ -473,9 +549,24 @@ onMounted(() => {
   if (route.query.editId) {
     isEditMode.value = true
     editArticleId.value = parseInt(route.query.editId as string)
+  } else {
+    // 如果不是编辑模式，尝试从 localStorage 恢复草稿
+    loadDraftFromLocalStorage()
   }
   loadTagTree()
 })
+
+// 监听表单变化，自动保存
+watch(
+  () => [articleForm.title, articleForm.summary, articleForm.content, articleForm.categoryId, articleForm.subCategoryId],
+  () => {
+    // 只有在非编辑模式下才自动保存
+    if (!isEditMode.value) {
+      debounceAutoSave()
+    }
+  },
+  { deep: true }
+)
 </script>
 
 <style scoped>
