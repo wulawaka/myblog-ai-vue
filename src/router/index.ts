@@ -81,14 +81,24 @@ router.beforeEach((to, from, next) => {
     '/',           // 文章列表页（首页）
     '/about',      // 关于页面
     '/login',      // 登录
-    '/register'    // 注册
+    '/register',   // 注册
+    '/article'     // 文章详情页（包括 /article/:id）
   ]
   
-  if (whiteList.includes(to.path)) {
+  // 检查是否在白名单中（支持前缀匹配）
+  const isInWhiteList = whiteList.some(path => {
+    if (path === '/') {
+      // 对于根路径，只匹配 exactly '/' 或以 '/' 开头但不是 '/home' 等需要登录的路径
+      return to.path === '/' || (to.path.startsWith('/') && !to.path.startsWith('/home') && !to.path.startsWith('/profile') && !to.path.startsWith('/change-password'))
+    }
+    return to.path === path || to.path.startsWith(path + '/')
+  })
+  
+  if (isInWhiteList) {
     // 白名单路由，直接放行
     next()
   } else {
-    // 其他路由需要登录（如：创建文章、分类管理等后台功能）
+    // 其他路由需要登录（如：创建文章、我的主页、个人信息等后台功能）
     if (isLoggedIn()) {
       // 已登录，放行
       next()
