@@ -87,7 +87,11 @@ export function createArticleApi(data: CreateArticleParams) {
  * @returns Promise<ArticleListData>
  */
 export function getArticleListApi(params: ArticleListParams) {
-  return get<ArticleListData>('/article/list', params)
+  // 添加时间戳参数，避免浏览器缓存
+  return get<ArticleListData>('/article/list', {
+    ...params,
+    _t: Date.now() // 时间戳，确保每次请求都是新的
+  })
 }
 
 /**

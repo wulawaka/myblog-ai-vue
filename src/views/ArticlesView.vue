@@ -155,7 +155,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, onUnmounted } from 'vue'
+import { ref, onMounted, watch, onUnmounted, onActivated } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 // 【新增】引入了 ArrowLeft 图标
@@ -198,20 +198,30 @@ const scrollTabs = (offset: number) => {
   }
 }
 
+// 统一的问候语更新函数
+const updateGreeting = () => {
+  const timeGreeting = updateGreetingByTime()
+  
+  if (isLogin.value && username.value) {
+    greetingText.value = `${timeGreeting}！${username.value}`
+  } else if (isLogin.value) {
+    greetingText.value = timeGreeting
+  } else {
+    greetingText.value = timeGreeting
+  }
+}
+
 const updateUserInfo = () => {
   isLogin.value = isLoggedIn()
   if (isLogin.value) {
     const userInfo = getUserInfo()
     username.value = userInfo?.username || ''
-    if (username.value) {
-      greetingText.value = `你好！${username.value}`
-    } else {
-      greetingText.value = '您好'
-    }
   } else {
     username.value = ''
-    greetingText.value = '您还没有登录'
   }
+  
+  // 统一更新问候语
+  updateGreeting()
 }
 
 // 更新问候语（根据时间）
@@ -246,15 +256,8 @@ const updateTimeDisplay = () => {
   const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
   currentWeekday.value = weekdays[now.getDay()] as string
   
-  // 更新问候语
-  const timeGreeting = updateGreetingByTime()
-  if (isLogin.value && username.value) {
-    greetingText.value = `${timeGreeting}！${username.value}`
-  } else if (isLogin.value) {
-    greetingText.value = timeGreeting
-  } else {
-    greetingText.value = timeGreeting
-  }
+  // 统一更新问候语
+  updateGreeting()
 }
 
 // 启动时间更新定时器
@@ -396,16 +399,23 @@ watch(
     setTimeout(() => {
       updateUserInfo()
     }, 100)
+    // 当路由变化时，重新加载文章列表
+    if (route.path === '/') {
+      loadArticleList()
+    }
   }
 )
 
 onMounted(() => {
-  setTimeout(() => {
-    updateUserInfo()
-  }, 100)
+  // 1. 先更新用户信息（会调用 updateGreeting 设置问候语）
+  updateUserInfo()
+  
+  // 2. 再启动时间更新（每秒也会调用 updateGreeting）
+  startTimeUpdate()
+  
+  // 3. 加载其他数据
   loadArticleList()
   loadTagTree()
-  startTimeUpdate() // 启动时间更新
 })
 
 // 组件卸载时清除定时器
@@ -413,6 +423,11 @@ onUnmounted(() => {
   if (timeInterval) {
     clearInterval(timeInterval)
   }
+})
+
+// 组件激活时重新加载数据（从其他页面返回时）
+onActivated(() => {
+  loadArticleList()
 })
 
 const navigateTo = (path: string) => {
