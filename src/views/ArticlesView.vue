@@ -51,9 +51,9 @@
         <div class="category-nav">
           
           <div class="fixed-tabs">
-            <a href="#" class="active">推荐</a>
-            <a href="#">最新</a>
-            <a href="#">置顶</a>
+            <a href="#" :class="{ active: currentTab === 'recommend' }" @click.prevent="handleTabChange('recommend')">推荐</a>
+            <a href="#" :class="{ active: currentTab === 'latest' }" @click.prevent="handleTabChange('latest')">最新</a>
+            <a href="#" :class="{ active: currentTab === 'top' }" @click.prevent="handleTabChange('top')">置顶</a>
           </div>
 
           <div class="tabs-divider"></div>
@@ -160,7 +160,7 @@ import { ElMessage } from 'element-plus'
 // 【新增】引入了 ArrowLeft 图标
 import { Search, View, Star, ChatDotRound, ArrowDown, ArrowRight, ArrowLeft } from '@element-plus/icons-vue'
 import { getUserInfo, isLoggedIn, logout } from '@/utils/auth'
-import { getArticleListApi, type Article } from '@/api/article'
+import { getArticleListApi, getTopArticleListApi, type Article } from '@/api/article'
 import { getTagTreeApi, type TagTreeNode } from '@/api/category'
 
 const router = useRouter()
@@ -174,6 +174,9 @@ const articleList = ref<Article[]>([])
 const pageNum = ref(1)
 const pageSize = ref(10)
 const total = ref(0) // 总记录数
+
+// 当前选中的 Tab（recommend: 推荐, latest: 最新, top: 置顶）
+const currentTab = ref<'recommend' | 'latest' | 'top'>('recommend')
 
 // 标签树列表
 const tagTreeList = ref<TagTreeNode[]>([])
@@ -269,19 +272,35 @@ const formatTime = (time: string) => {
 
 const loadArticleList = async () => {
   try {
-    const params: Record<string, string | number | undefined> = { 
-      pageNum: pageNum.value, 
-      pageSize: pageSize.value 
-    }
-    
-    // 如果有选中的分类，添加 categoryId 参数
-    if (selectedCategoryId.value) {
-      params.categoryId = selectedCategoryId.value
-    }
-    
-    const res = await getArticleListApi(params)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = (res.data as any)
+    let data: any
+    
+    // 根据当前 Tab 调用不同的 API
+    if (currentTab.value === 'top') {
+      // 置顶文章列表
+      const res = await getTopArticleListApi({
+        pageNum: pageNum.value,
+        pageSize: pageSize.value
+      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data = (res.data as any)
+    } else {
+      // 推荐/最新文章列表（目前都用同一个接口）
+      const params: Record<string, string | number | undefined> = { 
+        pageNum: pageNum.value, 
+        pageSize: pageSize.value 
+      }
+      
+      // 如果有选中的分类，添加 categoryId 参数
+      if (selectedCategoryId.value) {
+        params.categoryId = selectedCategoryId.value
+      }
+      
+      const res = await getArticleListApi(params)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data = (res.data as any)
+    }
+    
     if (data && data.data && data.data.list) {
       articleList.value = data.data.list
       // 保存总记录数
@@ -291,6 +310,15 @@ const loadArticleList = async () => {
     console.error('获取文章列表失败:', error)
     // 页面纯视觉演示时不强制报错弹窗
   }
+}
+
+// 处理 Tab 切换
+const handleTabChange = async (tab: 'recommend' | 'latest' | 'top') => {
+  currentTab.value = tab
+  // 重置页码
+  pageNum.value = 1
+  // 重新加载文章列表
+  await loadArticleList()
 }
 
 const loadTagTree = async () => {

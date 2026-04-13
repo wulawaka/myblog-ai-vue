@@ -45,13 +45,9 @@
         <!-- 文章底部操作 -->
         <footer class="article-footer">
           <div class="action-buttons">
-            <el-button :type="isTop ? 'warning' : 'info'" plain @click="handleToggleTop">
+            <el-button :type="isTop ? 'warning' : 'info'" plain disabled>
               <el-icon><Top /></el-icon>
-              {{ isTop ? '已置顶' : '置顶' }}
-            </el-button>
-            <el-button type="danger" plain @click="handleDelete">
-              <el-icon><Delete /></el-icon>
-              删除
+              {{ isTop ? '已置顶' : '未置顶' }}
             </el-button>
           </div>
           <div class="back-button">
@@ -76,10 +72,9 @@ import {
   Folder,
   PriceTag,
   Top,
-  Delete,
   ArrowLeft
 } from '@element-plus/icons-vue'
-import { getArticleDetailApi, deleteArticleApi, updateTopStatusApi } from '@/api/article'
+import { getArticleDetailApi } from '@/api/article'
 
 const router = useRouter()
 const route = useRoute()
@@ -179,50 +174,6 @@ const loadArticleDetail = async () => {
   } finally {
     loading.value = false
   }
-}
-
-// 切换置顶状态
-const handleToggleTop = async () => {
-  try {
-    const newTopStatus = isTop.value ? 0 : 1
-    
-    await updateTopStatusApi({
-      articleId: article.value.id,
-      isTop: newTopStatus
-    })
-    
-    isTop.value = !isTop.value
-    ElMessage.success(newTopStatus === 1 ? '置顶成功' : '取消置顶成功')
-  } catch (err: unknown) {
-    console.error('更新置顶状态失败:', err)
-    ElMessage.error('更新置顶状态失败')
-  }
-}
-
-// 删除文章
-const handleDelete = () => {
-  ElMessageBox.confirm(
-    '确定要删除这篇文章吗？',
-    '提示',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }
-  ).then(async () => {
-    try {
-      await deleteArticleApi(article.value.id)
-      ElMessage.success('删除成功')
-      setTimeout(() => {
-        goBack()
-      }, 1500)
-    } catch (err: unknown) {
-      console.error('删除文章失败:', err)
-      ElMessage.error('删除文章失败')
-    }
-  }).catch(() => {
-    // 用户取消
-  })
 }
 
 // 返回上一页

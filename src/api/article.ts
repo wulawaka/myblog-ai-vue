@@ -91,6 +91,15 @@ export function getArticleListApi(params: ArticleListParams) {
 }
 
 /**
+ * 获取置顶文章列表
+ * @param params 查询参数（pageNum, pageSize）
+ * @returns Promise<ArticleListData>
+ */
+export function getTopArticleListApi(params?: { pageNum?: number; pageSize?: number }) {
+  return get<ArticleListData>('/article/top-list', params)
+}
+
+/**
  * 删除文章
  * @param id 文章 ID
  * @returns Promise<void>
