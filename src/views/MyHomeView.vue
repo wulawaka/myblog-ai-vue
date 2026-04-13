@@ -37,7 +37,7 @@
       </header>
 
       <div class="tabs-section">
-        <el-tabs v-model="activeTab" class="home-tabs">
+        <el-tabs v-model="activeTab" class="home-tabs" @tab-change="handleTabChange">
           <el-tab-pane label="📝 我的文章" name="articles"></el-tab-pane>
           <el-tab-pane label="🏷️ 标签管理" name="tags"></el-tab-pane>
           <el-tab-pane label="📦 草稿箱" name="drafts"></el-tab-pane>
@@ -47,16 +47,16 @@
 
       <main class="home-main">
         <div v-show="activeTab === 'articles'" class="tab-content">
-          <MyHomeArticles />
+          <MyHomeArticles :key="refreshKey.articles" />
         </div>
         <div v-show="activeTab === 'tags'" class="tab-content">
           <MyHomeTags />
         </div>
         <div v-show="activeTab === 'drafts'" class="tab-content">
-          <MyHomeDrafts />
+          <MyHomeDrafts :key="refreshKey.drafts" />
         </div>
         <div v-show="activeTab === 'trash'" class="tab-content">
-          <MyHomeTrash />
+          <MyHomeTrash :key="refreshKey.trash" />
         </div>
       </main>
 
@@ -65,7 +65,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import MyHomeArticles from './MyHomeArticles.vue'
 import MyHomeTags from './MyHomeTags.vue'
@@ -76,6 +76,24 @@ const router = useRouter()
 
 // 默认激活第一个 Tab
 const activeTab = ref('articles')
+
+// 用于强制刷新组件的 key
+const refreshKey = reactive({
+  articles: 0,
+  drafts: 0,
+  trash: 0
+})
+
+// 监听 Tab 切换，强制刷新对应的组件
+const handleTabChange = (tabName: string) => {
+  if (tabName === 'articles') {
+    refreshKey.articles++
+  } else if (tabName === 'drafts') {
+    refreshKey.drafts++
+  } else if (tabName === 'trash') {
+    refreshKey.trash++
+  }
+}
 
 // 获取当前登录用户的用户名
 const username = computed(() => {

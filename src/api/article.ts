@@ -109,6 +109,15 @@ export function permanentDeleteArticleApi(id: number) {
 }
 
 /**
+ * 恢复文章
+ * @param id 文章 ID
+ * @returns Promise<void>
+ */
+export function restoreArticleApi(id: number) {
+  return put(`/article/restore/${id}`)
+}
+
+/**
  * 更新文章置顶状态
  * @param data 文章 ID 和置顶状态
  * @returns Promise<void>

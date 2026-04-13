@@ -74,11 +74,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { View, Star, ChatDotRound, Refresh, Delete } from '@element-plus/icons-vue'
-import { getArticleStatusApi, permanentDeleteArticleApi, type Article } from '@/api/article'
+import { getArticleStatusApi, permanentDeleteArticleApi, restoreArticleApi, type Article } from '@/api/article'
 
 const router = useRouter()
 const loading = ref(false)
@@ -116,10 +116,19 @@ const navigateToArticle = (articleId: number) => {
   router.push(`/article/${articleId}`)
 }
 
-// 恢复文章 (功能待实现)
-const recoverArticle = (articleId: number) => {
-  ElMessage.info(`恢复文章 ${articleId} (功能开发中)`)
-  // TODO: 后续实现恢复功能
+// 恢复文章
+const recoverArticle = async (articleId: number) => {
+  try {
+    // 调用 API 恢复文章
+    await restoreArticleApi(articleId)
+    ElMessage.success('恢复成功')
+    
+    // 重新加载列表
+    await loadTrashList()
+  } catch (error) {
+    console.error('恢复失败:', error)
+    ElMessage.error('恢复失败，请稍后重试')
+  }
 }
 
 // 确认删除文章（二次确认弹窗）
