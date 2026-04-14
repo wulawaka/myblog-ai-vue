@@ -59,6 +59,11 @@ request.interceptors.response.use(
         setTimeout(() => {
           window.location.href = '/login'
         }, 1500)
+      } else if (res.code === 40110) {
+        // 40110: 登录失败次数过多，账户被锁定（由登录页自行处理提示）
+        const error = new Error(res.msg || '账户已锁定') as Error & { code: number }
+        error.code = 40110
+        return Promise.reject(error)
       } else {
         ElMessage.error(res.msg || '请求失败')
       }

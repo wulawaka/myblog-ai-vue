@@ -40,8 +40,9 @@
               <el-button 
                 type="primary" 
                 size="large" 
-                class="login-btn"
+                :class="['login-btn', { 'login-btn--disabled': !isPasswordValid }]"
                 :loading="loading"
+                :disabled="!isPasswordValid"
                 @click="handleLogin"
               >
                 登录
@@ -62,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { loginApi } from '@/api/user'
@@ -71,6 +72,12 @@ import { setToken, setUserInfo } from '@/utils/auth'
 const router = useRouter()
 const loading = ref(false)
 const loginFormRef = ref<FormInstance>()
+
+// 计算密码长度是否有效（6-20位）
+const isPasswordValid = computed(() => {
+  const len = loginForm.password.length
+  return len >= 6 && len <= 20
+})
 
 // 登录表单数据
 const loginForm = reactive({
@@ -118,13 +125,17 @@ const handleLogin = async () => {
       router.push('/')
     }, 500)
   } catch (error: unknown) {
-    const err = error as { message?: string }
-    if (err.message && !err.message.includes('登录失败')) {
+    const err = error as Error & { code?: number; msg?: string }
+    
+    if (err.code === 40110) {
+      // 账户被锁定，显示后端返回的具体信息（如："密码错误，已失败3/3次，请15分钟后再试"）
+      ElMessage.error(err.msg || '密码错误次数过多，账户已锁定，请15分钟后再试')
+    } else if (err.message && !err.message.includes('登录失败')) {
       // 表单验证失败，Element Plus 会自动显示错误提示
       console.log('表单验证失败:', err)
     } else {
-      // API 调用失败
-      console.error('登录失败:', err)
+      // 普通登录失败（用户名或密码错误）
+      ElMessage.error('用户名或密码错误')
     }
   } finally {
     loading.value = false
@@ -237,19 +248,31 @@ const handleForgotPassword = () => {
   border-radius: 8px;
 }
 
-/* 登录按钮定制颜色：没选中淡蓝色，选中/悬浮深蓝色 */
+/* 登录按钮：默认灰色（无效状态） */
 .login-btn {
-  background-color: #87ceeb !important; /* 淡蓝色 */
-  border-color: #87ceeb !important;
+  background-color: #ccc !important;
+  border-color: #ccc !important;
   color: #fff !important;
   transition: all 0.3s ease;
 }
 
-.login-btn:hover,
-.login-btn:active,
-.login-btn:focus {
-  background-color: #00008b !important; /* 深蓝色 */
+/* 登录按钮：密码有效时显示深蓝色 */
+.login-btn:not(.login-btn--disabled) {
+  background-color: #00008b !important;
   border-color: #00008b !important;
+}
+
+.login-btn:not(.login-btn--disabled):hover,
+.login-btn:not(.login-btn--disabled):active,
+.login-btn:not(.login-btn--disabled):focus {
+  background-color: #0000cd !important;
+  border-color: #0000cd !important;
+}
+
+/* 禁用状态样式 */
+.login-btn--disabled {
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
 }
 
 /* 注册按钮稍微调优以适配毛玻璃 */
