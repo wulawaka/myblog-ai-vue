@@ -139,6 +139,7 @@
           placeholder="在此开始你的 Markdown 创作..."
           resize="none"
           class="markdown-textarea"
+          @paste="handlePaste"
         />
       </div>
 
@@ -160,6 +161,7 @@ import { getTagTreeApi, type TagTreeNode } from '@/api/category'
 import type { AxiosError } from 'axios'
 import type { ApiResponse } from '@/utils/request'
 import { createArticleApi, getArticleDetailApi, type CreateArticleParams, type Article } from '@/api/article'
+import { uploadToOss } from '@/utils/oss'
 import router from '@/router'
 
 // --- 路由 ---
@@ -457,6 +459,39 @@ const insertTable = () => {
 | 内容 1 | 内容 2 | 内容 3 |
 | 内容 4 | 内容 5 | 内容 6 |\n`
   insertAtCursor(tableTemplate)
+}
+
+// 处理粘贴事件（支持图片上传）
+const handlePaste = async (event: ClipboardEvent) => {
+  const items = event.clipboardData?.items
+  if (!items) return
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]
+    if (!item) continue
+    // 识别是否为图片
+    if (item.type.indexOf('image') !== -1) {
+      const file = item.getAsFile()
+      if (!file) continue
+
+      event.preventDefault() // 阻止默认粘贴行为
+      
+      try {
+        ElMessage.info('正在上传图片到 OSS...')
+        const url = await uploadToOss(file)
+        
+        // 构造 Markdown 图片语法并插入
+        const markdownImage = `\n![image](${url})\n`
+        insertMarkdown(markdownImage)
+        
+        ElMessage.success('图片上传成功！')
+      } catch (error) {
+        console.error('上传失败:', error)
+        ElMessage.error('图片上传失败，请重试')
+      }
+      break // 一次只处理一张图片
+    }
+  }
 }
 
 // --- 操作逻辑 ---

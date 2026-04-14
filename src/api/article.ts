@@ -184,3 +184,20 @@ export function getArticleStatusApi(data: ArticleStatusParams) {
   return post<ArticleListData>('/article/status', data)
 }
 
+// OSS 上传凭证响应类型
+export interface OssPolicy {
+  accessid: string
+  policy: string
+  signature: string
+  expire: number
+  dir: string
+  host: string
+}
+
+/**
+ * 获取 OSS 上传凭证
+ * @returns Promise<OssPolicy>
+ */
+export function getOssUploadPolicyApi() {
+  return get<OssPolicy>('/oss/upload-policy')
+}
