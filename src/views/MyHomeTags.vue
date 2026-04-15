@@ -229,13 +229,15 @@ const handleAddMainTag = async () => {
 const handleAddSubTag = async () => {
   if (!subTagFormRef.value || !currentParentTag.value) return
   
+  const parentId = currentParentTag.value.id
+  
   await subTagFormRef.value.validate(async (valid) => {
     if (!valid) return
     
     submitting.value = true
     try {
       await createSubTagApi({
-        parentId: currentParentTag.value.id,
+        parentId,
         name: subTagForm.value.name,
       })
       ElMessage.success('创建成功')

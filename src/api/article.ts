@@ -37,6 +37,19 @@ export interface CreateArticleParams {
   scategoryId?: string
 }
 
+// 更新文章请求参数
+export interface UpdateArticleParams {
+  articleId: number
+  categoryId: number
+  title: string
+  summary: string
+  content: string
+  isTop?: number
+  isDraft?: number
+  isDeleted?: number
+  scategoryId?: string
+}
+
 // 更新文章置顶状态请求参数
 export interface UpdateTopStatusParams {
   articleId: number
@@ -79,6 +92,15 @@ export interface ArticleListData {
  */
 export function createArticleApi(data: CreateArticleParams) {
   return post<Article>('/article', data)
+}
+
+/**
+ * 更新文章
+ * @param data 文章更新信息
+ * @returns Promise<Article>
+ */
+export function updateArticleApi(data: UpdateArticleParams) {
+  return put<Article>('/article', data)
 }
 
 /**

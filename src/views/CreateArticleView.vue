@@ -153,19 +153,19 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { getTagTreeApi, type TagTreeNode } from '@/api/category'
 import type { AxiosError } from 'axios'
 import type { ApiResponse } from '@/utils/request'
-import { createArticleApi, getArticleDetailApi, type CreateArticleParams, type Article } from '@/api/article'
+import { createArticleApi, updateArticleApi, getArticleDetailApi, type CreateArticleParams, type UpdateArticleParams, type Article } from '@/api/article'
 import { uploadToOss } from '@/utils/oss'
-import router from '@/router'
 
 // --- 路由 ---
 const route = useRoute()
+const router = useRouter()
 
 // --- 表单与验证数据 ---
 const articleFormRef = ref<FormInstance>()
@@ -501,63 +501,76 @@ const submitArticle = async (isDraft = false) => {
   await articleFormRef.value.validate(async (valid, fields) => {
     if (valid) {
       try {
-        // 从 localStorage 获取用户信息
-        const userInfoStr = localStorage.getItem('userInfo')
-        let userId = 0
-        if (userInfoStr && userInfoStr !== 'undefined') {
-          try {
-            const userInfo = JSON.parse(userInfoStr)
-            userId = userInfo.id
-          } catch (e) {
-            console.error('解析用户信息失败:', e)
-            ElMessage.error('用户信息异常，请重新登录')
-            return
+        // 编辑模式：调用更新接口
+        if (isEditMode.value && editArticleId.value) {
+          const updateData: UpdateArticleParams = {
+            articleId: editArticleId.value,
+            categoryId: articleForm.categoryId!,
+            title: articleForm.title,
+            summary: articleForm.summary,
+            content: articleForm.content,
+            isDraft: isDraft ? 1 : 0,
+          }
+          
+          // 如果有子标签，添加 scategoryId 参数
+          if (articleForm.subCategoryId) {
+            updateData.scategoryId = String(articleForm.subCategoryId)
+          }
+          
+          const res = await updateArticleApi(updateData)
+          const apiResponse = res.data as unknown as ApiResponse<{ id: number }>
+          
+          if (apiResponse.code === 20201 || apiResponse.code === 20202) {
+            ElMessage.success(isDraft ? '草稿已保存！' : '文章更新成功！')
+            router.push('/')
+          } else {
+            ElMessage.error(apiResponse.msg || '更新失败')
+          }
+        } else {
+          // 新增模式：调用创建接口
+          const userInfoStr = localStorage.getItem('userInfo')
+          let userId = 0
+          if (userInfoStr && userInfoStr !== 'undefined') {
+            try {
+              const userInfo = JSON.parse(userInfoStr)
+              userId = userInfo.id
+            } catch (e) {
+              console.error('解析用户信息失败:', e)
+              ElMessage.error('用户信息异常，请重新登录')
+              return
+            }
+          }
+          
+          const articleData: CreateArticleParams = {
+            userId,
+            categoryId: articleForm.categoryId!,
+            title: articleForm.title,
+            summary: articleForm.summary,
+            content: articleForm.content,
+            isTop: 0,
+            isDraft: isDraft ? 1 : 0,
+            isDeleted: 0
+          }
+          
+          if (articleForm.subCategoryId) {
+            articleData.scategoryId = String(articleForm.subCategoryId)
+          }
+          
+          const res = await createArticleApi(articleData)
+          const apiResponse = res.data as unknown as ApiResponse<{ id: number }>
+          
+          if (apiResponse.code === 20201) {
+            ElMessage.success(isDraft ? '草稿已保存！' : '文章发布成功！')
+            localStorage.removeItem(AUTO_SAVE_KEY)
+            router.push('/')
+          } else {
+            ElMessage.error(apiResponse.msg || '发布失败')
           }
         }
-        
-        // 构建请求参数
-        const articleData: CreateArticleParams = {
-          userId,
-          categoryId: articleForm.categoryId!,
-          title: articleForm.title,
-          summary: articleForm.summary,
-          content: articleForm.content,
-          isTop: 0,
-          isDraft: isDraft ? 1 : 0, // 根据参数设置草稿状态
-          isDeleted: 0
-        }
-        
-        // 如果有子标签，添加 scategoryId 参数
-        if (articleForm.subCategoryId) {
-          articleData.scategoryId = String(articleForm.subCategoryId)
-        }
-        
-        console.log('提交的数据：', articleData)
-        
-        // 调用创建文章 API
-        const res = await createArticleApi(articleData)
-        // 注意：由于响应拦截器返回的是完整的 AxiosResponse
-        // 所以 res.data 才是实际的 API 响应数据
-        console.log('API 返回:', res)
-        console.log('API 响应数据:', res.data)
-        
-        // 类型断言：将 res.data 断言为 ApiResponse<Article>
-        const apiResponse = res.data as unknown as ApiResponse<{ id: number }>
-        console.log('响应 code:', apiResponse.code)
-        
-        if (apiResponse.code === 20201) {
-          ElMessage.success(isDraft ? '草稿已保存！' : '文章发布成功！')
-          // 清除 localStorage 中的自动保存草稿
-          localStorage.removeItem(AUTO_SAVE_KEY)
-          // 跳转到首页或我的文章页面
-          router.push('/')
-        } else {
-          ElMessage.error(apiResponse.msg || '发布失败')
-        }
       } catch (error) {
-        console.error('发布文章失败:', error)
+        console.error('操作失败:', error)
         const axiosError = error as AxiosError<ApiResponse>
-        ElMessage.error(axiosError.response?.data?.msg || '发布失败，请稍后重试')
+        ElMessage.error(axiosError.response?.data?.msg || '操作失败，请稍后重试')
       }
     } else {
       console.log('验证失败', fields)

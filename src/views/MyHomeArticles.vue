@@ -137,8 +137,7 @@ const navigateToArticle = (articleId: number) => {
 
 // 编辑文章
 const editArticle = (articleId: number) => {
-  ElMessage.info(`编辑文章 ${articleId}`)
-  // TODO: 跳转到编辑页面或打开弹窗
+  router.push({ path: '/article/create', query: { editId: String(articleId) } })
 }
 
 // 删除文章
