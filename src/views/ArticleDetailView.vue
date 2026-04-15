@@ -62,8 +62,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import markdownIt from 'markdown-it'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github-dark.css'
 import {
   Loading,
   WarningFilled,
@@ -84,7 +86,23 @@ const md = markdownIt({
   html: true,        // 支持 HTML 标签
   linkify: true,     // 自动转换 URL 为链接
   typographer: true, // 支持排版引号等
-  breaks: true       // 支持换行符转 <br>
+  breaks: true,      // 支持换行符转 <br>
+  highlight: (str: string, lang: string) => {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return `<pre class="hljs"><code>${hljs.highlight(str, { language: lang }).value}</code></pre>`
+      } catch {
+        // 忽略高亮错误
+      }
+    }
+    // 自动检测语言
+    try {
+      return `<pre class="hljs"><code>${hljs.highlightAuto(str).value}</code></pre>`
+    } catch {
+      // 忽略自动检测错误
+    }
+    return str
+  }
 })
 
 const loading = ref(false)
@@ -303,11 +321,17 @@ onMounted(() => {
 }
 
 .article-body :deep(pre) {
-  background-color: #f6f8fa;
+  background-color: #0d1117;
   padding: 16px;
   border-radius: 6px;
   overflow-x: auto;
   margin-bottom: 16px;
+}
+
+.article-body :deep(pre code) {
+  color: #c9d1d9;
+  background-color: transparent;
+  padding: 0;
 }
 
 .article-body :deep(img) {

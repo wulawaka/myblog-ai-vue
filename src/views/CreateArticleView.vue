@@ -155,6 +155,8 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github-dark.css'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { getTagTreeApi, type TagTreeNode } from '@/api/category'
@@ -162,6 +164,35 @@ import type { AxiosError } from 'axios'
 import type { ApiResponse } from '@/utils/request'
 import { createArticleApi, updateArticleApi, getArticleDetailApi, type CreateArticleParams, type UpdateArticleParams, type Article } from '@/api/article'
 import { uploadToOss } from '@/utils/oss'
+
+// 配置 marked 使用 highlight.js
+marked.setOptions({
+  breaks: true, // 支持 GFM 换行
+  gfm: true     // 启用 GitHub Flavored Markdown
+})
+
+// 自定义 renderer 以支持代码高亮
+const renderer = new marked.Renderer()
+
+renderer.code = ({ text, lang }) => {
+  let highlightedCode = text
+  if (lang && hljs.getLanguage(lang)) {
+    try {
+      highlightedCode = hljs.highlight(text, { language: lang }).value
+    } catch {
+      // 忽略高亮错误
+    }
+  } else {
+    try {
+      highlightedCode = hljs.highlightAuto(text).value
+    } catch {
+      // 忽略自动检测错误
+    }
+  }
+  return `<pre><code class="hljs language-${lang || 'text'}">${highlightedCode}</code></pre>`
+}
+
+marked.use({ renderer })
 
 // --- 路由 ---
 const route = useRoute()
