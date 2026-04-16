@@ -1,5 +1,6 @@
 <template>
-  <div class="article-detail-container">
+  <div class="article-detail-page">
+    <div class="article-detail-container">
     <!-- 文章内容区域 -->
     <main class="article-main">
       <div v-if="loading" class="loading-state">
@@ -73,6 +74,7 @@
         </ul>
       </nav>
     </aside>
+    </div>
   </div>
 </template>
 
@@ -300,20 +302,33 @@ onMounted(() => {
 })
 </script>
 
+<style>
+/* 全局样式 - 覆盖 Element Plus 的宽度限制 */
+.article-detail-page .el-main {
+  max-width: none !important;
+  padding: 0 !important;
+}
+
+.article-detail-page {
+  max-width: none !important;
+  width: 100% !important;
+}
+</style>
+
 <style scoped>
 .article-detail-container {
   width: 100%;
+  max-width: none !important; /* 移除最大宽度限制 */
   background-color: #f4f5f5;
   padding: 20px;
   display: flex;
   gap: 20px;
-  max-width: 1200px;
   margin: 0 auto;
 }
 
 /* 右侧目录样式 */
 .table-of-contents {
-  width: 250px;
+  width: 190px;
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
@@ -399,6 +414,7 @@ onMounted(() => {
 .article-main {
   flex: 1;
   min-width: 0; /* 防止flex子项溢出 */
+  max-width: none; /* 移除最大宽度限制 */
 }
 
 .loading-state,
@@ -475,8 +491,8 @@ onMounted(() => {
 }
 
 .article-body {
-  font-size: 16px;
-  line-height: 1.8;
+  font-size: 15px;
+  line-height: 1.4;
   color: #303133;
 }
 
@@ -502,6 +518,7 @@ onMounted(() => {
   padding: 2px 6px;
   border-radius: 4px;
   font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
 }
 
 .article-body :deep(pre) {
@@ -516,6 +533,7 @@ onMounted(() => {
   color: #c9d1d9;
   background-color: transparent;
   padding: 0;
+  font-size: 13px;
 }
 
 .article-body :deep(img) {

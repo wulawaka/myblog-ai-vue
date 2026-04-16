@@ -60,7 +60,7 @@ import { House, User } from '@element-plus/icons-vue'
 
 .header-content {
   width: 100%;
-  max-width: 1200px;
+  max-width: none; /* 移除 header 的宽度限制 */
   margin: 0 auto;
   padding: 0 20px;
   display: flex;
@@ -85,7 +85,14 @@ import { House, User } from '@element-plus/icons-vue'
   padding: 0;
   background-color: #f5f7fa;
   width: 100%;
+  max-width: none !important; /* 移除最大宽度限制 */
   overflow: visible !important; /* 确保 sticky 定位正常工作 */
+}
+
+/* 确保 el-main 内部没有宽度限制 */
+.layout-main :deep(.el-main) {
+  max-width: none !important;
+  padding: 0 !important;
 }
 
 .layout-footer {
