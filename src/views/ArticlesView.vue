@@ -101,6 +101,13 @@
                     <span class="date">{{ formatTime(article.updatedAt) }}</span>
                     <span class="divider">|</span>
                     <span class="tag">{{ (article as any).categoryName || '前端' }}</span>
+                    <span class="divider">|</span>
+                    <!-- 子标签显示 -->
+                    <template v-if="(article as any).subCategories && (article as any).subCategories.length > 0">
+                      <span v-for="subTag in (article as any).subCategories" :key="subTag.id" class="sub-tag" :style="{ color: getRandomColor() }">
+                        {{ subTag.name }}
+                      </span>
+                    </template>
                   </div>
                 </div>
         
@@ -429,6 +436,26 @@ onUnmounted(() => {
 onActivated(() => {
   loadArticleList()
 })
+
+// 生成随机颜色
+const getRandomColor = () => {
+  const colors = [
+    '#1e80ff', // 蓝色
+    '#fa8c16', // 橙色
+    '#00b96b', // 绿色
+    '#2f54eb', // 深蓝
+    '#13c2c2', // 青色
+    '#52c41a', // 亮绿
+    '#eb2f96', // 粉色
+    '#1890ff', // 天蓝
+    '#722ed1', // 紫色
+    '#08979c', // 青绿
+    '#f5222d', // 红色
+    '#faad14', // 金色
+    '#a0d911', // 黄绿
+  ]
+  return colors[Math.floor(Math.random() * colors.length)]
+}
 
 const navigateTo = (path: string) => {
   router.push(path)
