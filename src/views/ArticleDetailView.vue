@@ -1,5 +1,22 @@
 <template>
   <div class="article-detail-container">
+    <!-- 左侧目录 -->
+    <aside class="table-of-contents" ref="tocRef">
+      <h3 class="toc-title">目录</h3>
+      <nav class="toc-nav">
+        <ul class="toc-list">
+          <li 
+            v-for="(item, index) in tableOfContents" 
+            :key="index"
+            :class="['toc-item', `toc-level-${item.level}`]"
+            @click="scrollToSection(item.id)"
+          >
+            {{ item.text }}
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
     <!-- 文章内容区域 -->
     <main class="article-main">
       <div v-if="loading" class="loading-state">
@@ -60,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import markdownIt from 'markdown-it'
@@ -108,6 +125,8 @@ const md = markdownIt({
 const loading = ref(false)
 const error = ref('')
 const isTop = ref(false)
+const tocRef = ref<HTMLElement | null>(null)
+const tocHeight = ref(200) // 默认高度
 
 interface Article {
   id: number
@@ -181,6 +200,10 @@ const loadArticleDetail = async () => {
     if (data && data.data) {
       article.value = data.data
       isTop.value = data.data.isTop === 1
+      
+      // 等待DOM更新后生成目录
+      await nextTick()
+      generateTableOfContents()
     } else {
       throw new Error('文章数据格式错误')
     }
@@ -199,6 +222,79 @@ const goBack = () => {
   router.back()
 }
 
+// 目录数据结构
+interface TocItem {
+  level: number
+  text: string
+  id: string
+}
+
+const tableOfContents = ref<TocItem[]>([])
+
+// 生成目录
+const generateTableOfContents = () => {
+  // 使用 setTimeout 确保 markdown 内容已完全渲染到 DOM
+  setTimeout(() => {
+    const contentElement = document.querySelector('.article-body')
+    if (!contentElement) {
+      console.warn('未找到文章内容区域')
+      return
+    }
+    
+    // 查找所有标题元素
+    const headings = contentElement.querySelectorAll('h1, h2, h3, h4, h5, h6')
+    console.log('找到的标题数量:', headings.length)
+    const tocItems: TocItem[] = []
+    
+    headings.forEach((heading, index) => {
+      // 为每个标题添加ID以便滚动定位
+      const id = `heading-${index}`
+      heading.setAttribute('id', id)
+      
+      // 添加到目录
+      tocItems.push({
+        level: parseInt(heading.tagName.substring(1)), // h1 -> 1, h2 -> 2, etc.
+        text: heading.textContent || '',
+        id: id
+      })
+    })
+    
+    tableOfContents.value = tocItems
+    console.log('目录项数量:', tocItems.length)
+    
+    // 根据目录项数量动态设置目录高度
+    updateTocHeight()
+  }, 100)
+}
+
+// 更新目录高度
+const updateTocHeight = () => {
+  const itemCount = tableOfContents.value.length
+  if (itemCount === 0) {
+    tocHeight.value = 0
+  } else {
+    // 基础高度 + 每项约30px的高度
+    const calculatedHeight = Math.max(100, itemCount * 30 + 50)
+    tocHeight.value = calculatedHeight
+  }
+}
+
+// 滚动到指定章节
+const scrollToSection = (id: string) => {
+  const element = document.getElementById(id)
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+// 监听文章内容变化，重新生成目录
+watch(renderedContent, () => {
+  // 当文章内容渲染完成后，重新生成目录
+  nextTick(() => {
+    generateTableOfContents()
+  })
+})
+
 onMounted(() => {
   loadArticleDetail()
 })
@@ -210,9 +306,94 @@ onMounted(() => {
   min-height: calc(100vh - 60px);
   background-color: #f4f5f5;
   padding: 20px;
+  display: flex;
+  gap: 20px;
+}
+
+/* 左侧目录样式 */
+.table-of-contents {
+  width: 250px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  position: sticky;
+  top: 20px;
+  /* 根据内容自动调整高度，但最大不超过视口的80% */
+  height: fit-content;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.toc-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0 0 15px 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.toc-nav {
+  /* 移除内层滚动，让外层容器统一处理滚动 */
+  max-height: none;
+  overflow-y: visible;
+}
+
+.toc-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.toc-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #606266;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toc-item:hover {
+  background-color: #f5f7fa;
+  color: #1e80ff;
+}
+
+.toc-level-1 {
+  font-weight: 600;
+  padding-left: 12px;
+}
+
+.toc-level-2 {
+  padding-left: 24px;
+}
+
+.toc-level-3 {
+  padding-left: 36px;
+  font-size: 13px;
+}
+
+.toc-level-4 {
+  padding-left: 48px;
+  font-size: 13px;
+}
+
+.toc-level-5 {
+  padding-left: 60px;
+  font-size: 12px;
+}
+
+.toc-level-6 {
+  padding-left: 72px;
+  font-size: 12px;
 }
 
 .article-main {
+  flex: 1;
   max-width: 900px;
   margin: 0 auto;
 }
@@ -389,4 +570,3 @@ onMounted(() => {
   text-align: center;
 }
 </style>
-
