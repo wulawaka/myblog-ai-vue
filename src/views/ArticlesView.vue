@@ -440,6 +440,10 @@ const isActiveRoute = (path: string) => {
 
 // 跳转到写文章页面
 const handleWriteArticle = () => {
+  if (!isLogin.value) {
+    ElMessage.warning('请先登录')
+    return
+  }
   router.push('/article/create')
 }
 
