@@ -101,13 +101,17 @@
                     <span class="divider">|</span>
                     <span class="date">{{ formatTime(article.updatedAt) }}</span>
                     <span class="divider">|</span>
-                    <span class="tag">{{ (article as any).categoryName || '前端' }}</span>
+                    <div class="tag-container">
+                      <span class="tag">{{ (article as any).categoryName || '前端' }}</span>
+                    </div>
                     <span class="divider">></span>
                     <!-- 子标签显示 -->
                     <template v-if="(article as any).subCategories && (article as any).subCategories.length > 0">
-                      <span v-for="subTag in (article as any).subCategories" :key="subTag.id" class="sub-tag" :style="{ color: getRandomColor() }">
-                        {{ subTag.name }}
-                      </span>
+                      <div class="sub-tag-container">
+                        <span v-for="subTag in (article as any).subCategories" :key="subTag.id" class="sub-tag" :style="{ color: getRandomColor() }">
+                          {{ subTag.name }}
+                        </span>
+                      </div>
                     </template>
                   </div>
                 </div>
@@ -838,6 +842,28 @@ const handlePageChange = async (page: number) => {
 
 .article-meta-bottom .divider {
   color: #e4e6eb;
+}
+
+/* 标签容器样式 */
+.tag-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background-color: #f2f3f5;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+/* 子标签容器样式 */
+.sub-tag-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background-color: #f2f3f5;
+  border-radius: 12px;
+  font-size: 13px;
 }
 
 .sidebar {

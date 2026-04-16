@@ -41,7 +41,17 @@
                   <span class="divider">|</span>
                   <span class="date">{{ formatTime(article.updatedAt) }}</span>
                   <span class="divider">|</span>
-                  <span class="tag">{{ (article as any).categoryName || '未分类' }}</span>
+                  <div class="tag-container">
+                    <span class="tag">{{ (article as any).categoryName || '未分类' }}</span>
+                  </div>
+                  <!-- 子标签显示 -->
+                  <template v-if="(article as any).subCategories && (article as any).subCategories.length > 0">
+                    <div class="sub-tag-container">
+                      <span v-for="subTag in (article as any).subCategories" :key="subTag.id" class="sub-tag">
+                        {{ subTag.name }}
+                      </span>
+                    </div>
+                  </template>
                 </div>
               </div>
             </div>
@@ -313,6 +323,32 @@ onMounted(() => {
   border-radius: 2px;
   color: #515767;
   font-size: 12px;
+}
+
+/* 标签容器样式 */
+.tag-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background-color: #f2f3f5;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+/* 子标签容器样式 */
+.sub-tag-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background-color: #f2f3f5;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.sub-tag {
+  color: #1e80ff;
 }
 
 /* 分页容器样式 */
