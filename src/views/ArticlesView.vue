@@ -3,6 +3,7 @@
     <header class="navbar">
       <div class="nav-content">
         <div class="nav-left">
+          <img src="/blog.svg" alt="博客图标" class="logo-icon">
           <span class="logo-text" @click="navigateTo('/')">我的博客</span>
           <ul class="nav-menu">
             <li :class="{ active: isActiveRoute('/') }" @click="navigateTo('/')">首页</li>
@@ -101,7 +102,7 @@
                     <span class="date">{{ formatTime(article.updatedAt) }}</span>
                     <span class="divider">|</span>
                     <span class="tag">{{ (article as any).categoryName || '前端' }}</span>
-                    <span class="divider">|</span>
+                    <span class="divider">></span>
                     <!-- 子标签显示 -->
                     <template v-if="(article as any).subCategories && (article as any).subCategories.length > 0">
                       <span v-for="subTag in (article as any).subCategories" :key="subTag.id" class="sub-tag" :style="{ color: getRandomColor() }">
@@ -955,5 +956,17 @@ const handlePageChange = async (page: number) => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center; /* 垂直居中对齐 */
+}
+
+.logo-icon {
+  width: 32px;  /* 根据你的设计调整大小 */
+  height: 32px;
+  margin-right: 12px; /* 图标和文字之间的间距 */
+  /* 如果需要，可以添加 cursor: pointer; 让它看起来可点击 */
 }
 </style>

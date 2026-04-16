@@ -1,7 +1,9 @@
 <template>
   <div class="login-container">
     <div class="login-box">
-      <div class="left-section"></div>
+      <div class="left-section">
+        <div ref="lottieContainer" class="lottie-box"></div>
+      </div>
       
       <div class="right-section glass-effect">
         <div class="form-wrapper">
@@ -63,12 +65,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { loginApi } from '@/api/user'
 import { setToken, setUserInfo } from '@/utils/auth'
+import type { AnimationItem } from 'lottie-web'
+import lottie from 'lottie-web'
+import carAnimation from '@/assets/car-loading.json'
 
+const lottieContainer = ref(null);
+let animationInstance: AnimationItem | null = null;
 const router = useRouter()
 const loading = ref(false)
 const loginFormRef = ref<FormInstance>()
@@ -155,6 +162,24 @@ const handleRegister = () => {
 const handleForgotPassword = () => {
   ElMessage.info('忘记密码功能开发中...')
 }
+
+onMounted(() => {
+  // 初始化 Lottie 动画
+  animationInstance = lottie.loadAnimation({
+    container: lottieContainer.value!, // 绑定 DOM 元素
+    renderer: 'svg', // 渲染方式，推荐 svg
+    loop: true, // 是否循环播放
+    autoplay: true, // 是否自动播放
+    animationData: carAnimation // 引入的 json 数据
+  });
+});
+
+onBeforeUnmount(() => {
+  // 组件销毁前，销毁动画实例，防止内存泄漏
+  if (animationInstance) {
+    animationInstance.destroy();
+  }
+});
 </script>
 
 <style scoped>
