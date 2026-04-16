@@ -82,11 +82,10 @@ import { House, User } from '@element-plus/icons-vue'
 
 .layout-main {
   flex: 1;
-  padding: 20px;
+  padding: 0;
   background-color: #f5f7fa;
-  max-width: 1200px;
-  margin: 0 auto;
   width: 100%;
+  overflow: visible !important; /* 确保 sticky 定位正常工作 */
 }
 
 .layout-footer {

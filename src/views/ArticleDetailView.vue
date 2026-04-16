@@ -1,22 +1,5 @@
 <template>
   <div class="article-detail-container">
-    <!-- 左侧目录 -->
-    <aside class="table-of-contents" ref="tocRef">
-      <h3 class="toc-title">目录</h3>
-      <nav class="toc-nav">
-        <ul class="toc-list">
-          <li 
-            v-for="(item, index) in tableOfContents" 
-            :key="index"
-            :class="['toc-item', `toc-level-${item.level}`]"
-            @click="scrollToSection(item.id)"
-          >
-            {{ item.text }}
-          </li>
-        </ul>
-      </nav>
-    </aside>
-
     <!-- 文章内容区域 -->
     <main class="article-main">
       <div v-if="loading" class="loading-state">
@@ -73,6 +56,23 @@
         </footer>
       </div>
     </main>
+
+    <!-- 右侧目录区域 -->
+    <aside class="table-of-contents" ref="tocRef">
+      <h3 class="toc-title">目录</h3>
+      <nav class="toc-nav">
+        <ul class="toc-list">
+          <li 
+            v-for="(item, index) in tableOfContents" 
+            :key="index"
+            :class="['toc-item', `toc-level-${item.level}`]"
+            @click="scrollToSection(item.id)"
+          >
+            {{ item.text }}
+          </li>
+        </ul>
+      </nav>
+    </aside>
   </div>
 </template>
 
@@ -303,26 +303,30 @@ onMounted(() => {
 <style scoped>
 .article-detail-container {
   width: 100%;
-  min-height: calc(100vh - 60px);
   background-color: #f4f5f5;
   padding: 20px;
   display: flex;
   gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-/* 左侧目录样式 */
+/* 右侧目录样式 */
 .table-of-contents {
   width: 250px;
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   padding: 20px;
+  position: -webkit-sticky; /* Safari 兼容 */
   position: sticky;
-  top: 20px;
-  /* 根据内容自动调整高度，但最大不超过视口的80% */
+  top: 80px; /* 考虑header高度(60px) + 间距(20px) */
   height: fit-content;
-  max-height: 80vh;
+  max-height: calc(100vh - 100px);
   overflow-y: auto;
+  z-index: 10;
+  flex-shrink: 0;
+  align-self: flex-start;
 }
 
 .toc-title {
@@ -394,8 +398,7 @@ onMounted(() => {
 
 .article-main {
   flex: 1;
-  max-width: 900px;
-  margin: 0 auto;
+  min-width: 0; /* 防止flex子项溢出 */
 }
 
 .loading-state,
