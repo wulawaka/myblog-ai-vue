@@ -14,8 +14,8 @@ export interface LoginData {
 
 import { ElMessage } from 'element-plus'
 
-// Token 有效期：2 小时（毫秒）
-const TOKEN_EXPIRY_TIME = 2 * 60 * 60 * 1000
+// Token 有效期：24 小时（毫秒）
+const TOKEN_EXPIRY_TIME = 24 * 60 * 60 * 1000
 
 /**
  * 设置 Token

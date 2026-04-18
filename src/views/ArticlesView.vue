@@ -645,6 +645,7 @@ const handlePageChange = async (page: number) => {
   display: flex;
   justify-content: space-between; 
   gap: 20px;
+  padding: 20px;
 }
 
 .content-area {

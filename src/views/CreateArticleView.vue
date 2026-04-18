@@ -229,7 +229,8 @@ const editArticleId = ref<number | null>(null)
 
 // 自动保存相关
 let autoSaveTimer: number | null = null
-const AUTO_SAVE_KEY = 'article_draft_auto_save'
+const AUTO_SAVE_NEW_KEY = 'article_draft_new' // 新增文章的草稿键
+const getEditDraftKey = (articleId: number) => `article_draft_edit_${articleId}` // 编辑文章的草稿键
 
 // 自动保存到 localStorage
 const autoSaveToLocalStorage = () => {
@@ -241,7 +242,15 @@ const autoSaveToLocalStorage = () => {
     subCategoryId: articleForm.subCategoryId,
     timestamp: new Date().toISOString()
   }
-  localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(draftData))
+  
+  // 根据模式选择不同的存储键
+  if (isEditMode.value && editArticleId.value) {
+    // 编辑模式：保存到对应文章的草稿
+    localStorage.setItem(getEditDraftKey(editArticleId.value), JSON.stringify(draftData))
+  } else {
+    // 新增模式：保存到通用草稿
+    localStorage.setItem(AUTO_SAVE_NEW_KEY, JSON.stringify(draftData))
+  }
   
   // 显示保存提示（使用 ElMessage，不会打断用户输入）
   ElMessage({
@@ -268,13 +277,30 @@ const debounceAutoSave = () => {
 // 从 localStorage 恢复草稿
 const loadDraftFromLocalStorage = () => {
   try {
-    const savedData = localStorage.getItem(AUTO_SAVE_KEY)
+    let savedData: string | null = null
+    let draftType = ''
+    
+    // 根据模式选择不同的存储键
+    if (isEditMode.value && editArticleId.value) {
+      // 编辑模式：检查是否有该文章的编辑草稿
+      savedData = localStorage.getItem(getEditDraftKey(editArticleId.value))
+      draftType = 'edit'
+    } else {
+      // 新增模式：检查是否有新增文章的草稿
+      savedData = localStorage.getItem(AUTO_SAVE_NEW_KEY)
+      draftType = 'new'
+    }
+    
     if (savedData) {
       const draftData = JSON.parse(savedData)
       
       // 询问用户是否恢复
+      const message = draftType === 'edit' 
+        ? `检测到未保存的修改（${new Date(draftData.timestamp).toLocaleString()}），是否恢复？`
+        : `检测到未保存的草稿（${new Date(draftData.timestamp).toLocaleString()}），是否恢复？`
+      
       ElMessageBox.confirm(
-        `检测到未保存的草稿（${new Date(draftData.timestamp).toLocaleString()}），是否恢复？`,
+        message,
         '提示',
         {
           confirmButtonText: '恢复',
@@ -291,8 +317,12 @@ const loadDraftFromLocalStorage = () => {
         
         ElMessage.success('草稿已恢复')
       }).catch(() => {
-        // 用户选择放弃，清除本地存储
-        localStorage.removeItem(AUTO_SAVE_KEY)
+        // 用户选择放弃，清除对应的本地存储
+        if (draftType === 'edit' && editArticleId.value) {
+          localStorage.removeItem(getEditDraftKey(editArticleId.value))
+        } else {
+          localStorage.removeItem(AUTO_SAVE_NEW_KEY)
+        }
         ElMessage.info('已放弃草稿')
       })
     }
@@ -333,31 +363,56 @@ const loadTagTree = async () => {
 // 加载编辑文章的详情
 const loadArticleForEdit = async (articleId: number) => {
   try {
-    const res = await getArticleDetailApi(articleId)
-    const data = (res.data as unknown) as { data: Article }
+    // 1. 先检查是否有本地草稿
+    const draftKey = getEditDraftKey(articleId)
+    const savedDraft = localStorage.getItem(draftKey)
     
-    if (data && data.data) {
-      const article = data.data
-      // 填充表单
-      articleForm.title = article.title
-      articleForm.summary = article.summary
-      articleForm.content = article.content
-      articleForm.categoryId = article.categoryId
+    if (savedDraft) {
+      // 2. 如果有草稿，直接使用草稿数据（静默恢复，不弹窗）
+      const draftData = JSON.parse(savedDraft)
+      articleForm.title = draftData.title || ''
+      articleForm.summary = draftData.summary || ''
+      articleForm.content = draftData.content || ''
+      articleForm.categoryId = draftData.categoryId || null
+      articleForm.subCategoryId = draftData.subCategoryId || null
       
-      // 如果有子标签，设置子标签
-      if (article.subCategoryIds) {
-        const subCategoryId = parseInt(article.subCategoryIds)
-        if (!isNaN(subCategoryId)) {
-          articleForm.subCategoryId = subCategoryId
-          // 确保子标签列表已加载
-          const subTagsForCategory = allSubTagsMap[article.categoryId]
-          if (subTagsForCategory) {
-            subTags.value = subTagsForCategory
-          }
+      // 确保子标签列表已加载
+      if (draftData.categoryId) {
+        const subTagsForCategory = allSubTagsMap[draftData.categoryId]
+        if (subTagsForCategory) {
+          subTags.value = subTagsForCategory
         }
       }
       
-      ElMessage.success('文章已加载，可以编辑')
+      ElMessage.success('已恢复未保存的修改')
+    } else {
+      // 3. 如果没有草稿，才从服务器加载
+      const res = await getArticleDetailApi(articleId)
+      const data = (res.data as unknown) as { data: Article }
+      
+      if (data && data.data) {
+        const article = data.data
+        // 填充表单
+        articleForm.title = article.title
+        articleForm.summary = article.summary
+        articleForm.content = article.content
+        articleForm.categoryId = article.categoryId
+        
+        // 如果有子标签，设置子标签
+        if (article.subCategoryIds) {
+          const subCategoryId = parseInt(article.subCategoryIds)
+          if (!isNaN(subCategoryId)) {
+            articleForm.subCategoryId = subCategoryId
+            // 确保子标签列表已加载
+            const subTagsForCategory = allSubTagsMap[article.categoryId]
+            if (subTagsForCategory) {
+              subTags.value = subTagsForCategory
+            }
+          }
+        }
+        
+        ElMessage.success('文章已加载，可以编辑')
+      }
     }
   } catch (error) {
     console.error('加载文章详情失败:', error)
@@ -553,6 +608,12 @@ const submitArticle = async (isDraft = false) => {
           
           if (apiResponse.code === 20201 || apiResponse.code === 20202) {
             ElMessage.success(isDraft ? '草稿已保存！' : '文章更新成功！')
+            // 清除对应的草稿
+            if (isEditMode.value && editArticleId.value) {
+              localStorage.removeItem(getEditDraftKey(editArticleId.value))
+            } else {
+              localStorage.removeItem(AUTO_SAVE_NEW_KEY)
+            }
             router.push('/')
           } else {
             ElMessage.error(apiResponse.msg || '更新失败')
@@ -592,7 +653,8 @@ const submitArticle = async (isDraft = false) => {
           
           if (apiResponse.code === 20201) {
             ElMessage.success(isDraft ? '草稿已保存！' : '文章发布成功！')
-            localStorage.removeItem(AUTO_SAVE_KEY)
+            // 清除新增文章的草稿
+            localStorage.removeItem(AUTO_SAVE_NEW_KEY)
             router.push('/')
           } else {
             ElMessage.error(apiResponse.msg || '发布失败')
@@ -635,14 +697,11 @@ onMounted(() => {
   loadTagTree()
 })
 
-// 监听表单变化，自动保存
+// 监听表单变化，自动保存（不再区分模式，统一启用）
 watch(
   () => [articleForm.title, articleForm.summary, articleForm.content, articleForm.categoryId, articleForm.subCategoryId],
   () => {
-    // 只有在非编辑模式下才自动保存
-    if (!isEditMode.value) {
-      debounceAutoSave()
-    }
+    debounceAutoSave()
   },
   { deep: true }
 )
